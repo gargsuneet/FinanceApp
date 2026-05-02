@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.account.AccountsScreen
 import com.financeapp.presentation.budget.BudgetScreen
 import com.financeapp.presentation.category.CategoriesScreen
@@ -35,24 +36,24 @@ sealed class BottomNavItem(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    object Home : BottomNavItem("home", "Home", Icons.Filled.Home, Icons.Outlined.Home)
-    object Transactions : BottomNavItem("transactions", "Transactions", Icons.Filled.ReceiptLong, Icons.Outlined.ReceiptLong)
-    object Reports : BottomNavItem("reports", "Reports", Icons.Filled.BarChart, Icons.Outlined.BarChart)
+    object Book : BottomNavItem("book", "Book", Icons.Filled.MenuBook, Icons.Outlined.MenuBook)
+    object Chart : BottomNavItem("chart", "Chart", Icons.Filled.BarChart, Icons.Outlined.BarChart)
     object Budget : BottomNavItem("budget", "Budget", Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet)
+    object Account : BottomNavItem("account_tab", "Account", Icons.Filled.AccountBalance, Icons.Outlined.AccountBalance)
     object More : BottomNavItem("more", "More", Icons.Filled.MoreHoriz, Icons.Outlined.MoreHoriz)
 }
 
 val bottomNavItems = listOf(
-    BottomNavItem.Home,
-    BottomNavItem.Transactions,
-    BottomNavItem.Reports,
+    BottomNavItem.Book,
+    BottomNavItem.Chart,
     BottomNavItem.Budget,
+    BottomNavItem.Account,
     BottomNavItem.More
 )
 
 @Composable
 fun MainScreen(
-    onNavigateToAddTransaction: () -> Unit,
+    onNavigateToAddTransaction: (TransactionType) -> Unit,
     onNavigateToEditTransaction: (Long) -> Unit
 ) {
     val navController = rememberNavController()
@@ -87,41 +88,41 @@ fun MainScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = BottomNavItem.Home.route,
+            startDestination = BottomNavItem.Book.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Home.route) {
+            composable(BottomNavItem.Book.route) {
                 HomeScreen(
                     onAddTransaction = onNavigateToAddTransaction,
                     onTransactionClick = onNavigateToEditTransaction,
                     onSeeAllClick = {
-                        navController.navigate(BottomNavItem.Transactions.route) {
+                        navController.navigate("transactions_list") {
                             launchSingleTop = true
                         }
                     }
                 )
             }
-            composable(BottomNavItem.Transactions.route) {
-                TransactionListScreen(
-                    onAddTransaction = onNavigateToAddTransaction,
-                    onTransactionClick = onNavigateToEditTransaction
-                )
-            }
-            composable(BottomNavItem.Reports.route) {
+            composable(BottomNavItem.Chart.route) {
                 ReportsScreen()
             }
             composable(BottomNavItem.Budget.route) {
                 BudgetScreen()
             }
+            composable(BottomNavItem.Account.route) {
+                AccountsScreen()
+            }
             composable(BottomNavItem.More.route) {
                 MoreScreen(
-                    onAccountsClick = { navController.navigate("accounts") },
+                    onTransactionsClick = { navController.navigate("transactions_list") },
                     onCategoriesClick = { navController.navigate("categories") },
                     onSettingsClick = { navController.navigate("settings") }
                 )
             }
-            composable("accounts") {
-                AccountsScreen()
+            composable("transactions_list") {
+                TransactionListScreen(
+                    onAddTransaction = { onNavigateToAddTransaction(TransactionType.EXPENSE) },
+                    onTransactionClick = onNavigateToEditTransaction
+                )
             }
             composable("categories") {
                 CategoriesScreen()
@@ -135,7 +136,7 @@ fun MainScreen(
 
 @Composable
 fun MoreScreen(
-    onAccountsClick: () -> Unit,
+    onTransactionsClick: () -> Unit,
     onCategoriesClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -158,10 +159,10 @@ fun MoreScreen(
             ) {
                 Column {
                     MoreItem(
-                        icon = Icons.Default.AccountBalance,
-                        title = "Accounts",
-                        subtitle = "Manage your accounts",
-                        onClick = onAccountsClick
+                        icon = Icons.Default.ReceiptLong,
+                        title = "Transactions",
+                        subtitle = "View all transactions",
+                        onClick = onTransactionsClick
                     )
                     Divider(modifier = Modifier.padding(horizontal = 16.dp))
                     MoreItem(

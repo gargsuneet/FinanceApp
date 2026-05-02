@@ -1,160 +1,305 @@
 package com.financeapp.presentation.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.financeapp.FinanceApplication
-import com.financeapp.presentation.components.SummaryCard
+import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.components.TransactionItem
 import com.financeapp.presentation.components.formatAmount
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onAddTransaction: () -> Unit,
+    onAddTransaction: (TransactionType) -> Unit,
     onTransactionClick: (Long) -> Unit,
     onSeeAllClick: () -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
+    var fabExpanded by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddTransaction,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction", tint = Color.White)
-            }
-        },
-        containerColor = Color(0xFFF5F5F5)
-    ) { padding ->
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
+    val monthLabel = remember(state.selectedMonth, state.selectedYear) {
+        val cal = Calendar.getInstance()
+        cal.set(state.selectedYear, state.selectedMonth - 1, 1)
+        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(cal.time)
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFAFAFA))) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 80.dp)
+        ) {
+            // Month selector
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = viewModel::prevMonth) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month", tint = Color(0xFF1976D2))
+                    }
                     Text(
-                        text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date()),
-                        fontSize = 13.sp,
-                        color = Color(0xFF757575)
+                        text = monthLabel,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF212121)
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text("Good Day!", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF212121))
+                    IconButton(onClick = viewModel::nextMonth) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Next month", tint = Color(0xFF1976D2))
+                    }
                 }
+                Divider(color = Color(0xFFEEEEEE))
+            }
 
-                item {
-                    SummaryCard(
-                        income = state.summary.income,
-                        expense = state.summary.expense,
-                        balance = state.summary.income - state.summary.expense
-                    )
-                }
-
-                item {
-                    QuickStatsRow(
-                        income = state.summary.income,
-                        expense = state.summary.expense
-                    )
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            // AndroMoney-style summary bar
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text("Recent Transactions", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        Text("Income", fontSize = 11.sp, color = Color(0xFF9E9E9E))
                         Text(
-                            "See All",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 13.sp,
-                            modifier = Modifier.clickable(onClick = onSeeAllClick)
+                            formatAmount(state.summary.income),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(40.dp)
+                            .background(Color(0xFFEEEEEE))
+                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1.2f)
+                    ) {
+                        Text("Balance", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                        Text(
+                            formatAmount(state.totalBalance),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1976D2)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(40.dp)
+                            .background(Color(0xFFEEEEEE))
+                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Expense", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                        Text(
+                            formatAmount(state.summary.expense),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFF44336)
                         )
                     }
                 }
+                Divider(color = Color(0xFFEEEEEE))
+            }
 
-                if (state.recentTransactions.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No transactions yet.\nTap + to add one!", color = Color(0xFF9E9E9E), fontSize = 14.sp)
+            if (state.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
+                }
+            } else if (state.recentTransactions.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.ReceiptLong,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = Color(0xFFBDBDBD)
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "No transactions this month\nTap + to add one!",
+                                color = Color(0xFF9E9E9E),
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
-                } else {
-                    items(state.recentTransactions) { transaction ->
-                        TransactionItem(
-                            transaction = transaction,
-                            onClick = { onTransactionClick(transaction.id) }
-                        )
+                }
+            } else {
+                items(state.recentTransactions) { transaction ->
+                    TransactionItem(
+                        transaction = transaction,
+                        onClick = { onTransactionClick(transaction.id) }
+                    )
+                    Divider(
+                        modifier = Modifier.padding(start = 72.dp),
+                        color = Color(0xFFF5F5F5),
+                        thickness = 0.5.dp
+                    )
+                }
+                item {
+                    TextButton(
+                        onClick = onSeeAllClick,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("See all transactions", color = Color(0xFF1976D2))
                     }
                 }
+            }
+        }
+
+        // FAB overlay: dim background when expanded
+        if (fabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable { fabExpanded = false }
+            )
+        }
+
+        // FAB with 3 options
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 16.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AnimatedVisibility(
+                visible = fabExpanded,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FabOption(
+                        label = "Transfer",
+                        color = Color(0xFF2196F3),
+                        icon = Icons.Default.SwapHoriz,
+                        onClick = {
+                            fabExpanded = false
+                            onAddTransaction(TransactionType.TRANSFER)
+                        }
+                    )
+                    FabOption(
+                        label = "Income",
+                        color = Color(0xFF4CAF50),
+                        icon = Icons.Default.ArrowDownward,
+                        onClick = {
+                            fabExpanded = false
+                            onAddTransaction(TransactionType.INCOME)
+                        }
+                    )
+                    FabOption(
+                        label = "Expense",
+                        color = Color(0xFFF44336),
+                        icon = Icons.Default.ArrowUpward,
+                        onClick = {
+                            fabExpanded = false
+                            onAddTransaction(TransactionType.EXPENSE)
+                        }
+                    )
+                }
+            }
+            FloatingActionButton(
+                onClick = { fabExpanded = !fabExpanded },
+                containerColor = Color(0xFF1976D2),
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(
+                    if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                    contentDescription = "Add Transaction"
+                )
             }
         }
     }
 }
 
 @Composable
-fun QuickStatsRow(income: Double, expense: Double) {
+private fun FabOption(
+    label: String,
+    color: Color,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StatCard(
-            label = "Net Savings",
-            value = formatAmount(income - expense),
-            valueColor = if (income >= expense) Color(0xFF4CAF50) else Color(0xFFF44336),
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            label = "Savings Rate",
-            value = if (income > 0) "${String.format("%.1f", (income - expense) / income * 100)}%" else "N/A",
-            valueColor = Color(0xFF1976D2),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun StatCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(label, fontSize = 12.sp, color = Color(0xFF757575))
-            Spacer(Modifier.height(4.dp))
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = valueColor)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 2.dp
+        ) {
+            Text(
+                label,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = color
+            )
+        }
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.size(44.dp),
+            containerColor = color,
+            contentColor = Color.White,
+            shape = CircleShape
+        ) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(20.dp))
         }
     }
 }

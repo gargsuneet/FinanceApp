@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.MainScreen
 
 class MainActivity : ComponentActivity() {
@@ -115,11 +116,16 @@ fun AppNavHost() {
     NavHost(navController = navController, startDestination = "main") {
         composable("main") {
             MainScreen(
-                onNavigateToAddTransaction = { navController.navigate("add_transaction") },
+                onNavigateToAddTransaction = { type ->
+                    navController.navigate("add_transaction/${type.name}")
+                },
                 onNavigateToEditTransaction = { id -> navController.navigate("edit_transaction/$id") }
             )
         }
-        composable("add_transaction") {
+        composable(
+            route = "add_transaction/{transactionType}",
+            arguments = listOf(navArgument("transactionType") { type = NavType.StringType; defaultValue = "EXPENSE" })
+        ) {
             com.financeapp.presentation.transaction.AddEditTransactionScreen(
                 onNavigateBack = { navController.popBackStack() }
             )

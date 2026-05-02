@@ -13,6 +13,12 @@ import com.financeapp.domain.usecase.UpdateCategoryUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+data class CategoryGroup(
+    val parent: Category,
+    val children: List<Category>,
+    val isExpanded: Boolean = true
+)
+
 data class CategoryUiState(
     val categories: List<Category> = emptyList(),
     val selectedTab: CategoryType = CategoryType.EXPENSE,
@@ -22,6 +28,8 @@ data class CategoryUiState(
     val editType: CategoryType = CategoryType.EXPENSE,
     val editIcon: String = "category",
     val editColor: String = "#9C27B0",
+    val editParentId: Long? = null,
+    val collapsedParents: Set<Long> = emptySet(),
     val isSaved: Boolean = false,
     val error: String? = null
 )
@@ -45,20 +53,68 @@ class CategoryViewModel(
     }
 
     val filteredCategories: StateFlow<List<Category>> = uiState
-        .map { state -> state.categories.filter { it.type == state.selectedTab || it.type == CategoryType.BOTH } }
+        .map { state ->
+            state.categories.filter { it.type == state.selectedTab || it.type == CategoryType.BOTH }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val groupedCategories: StateFlow<List<CategoryGroup>> = uiState
+        .map { state ->
+            val typeFiltered = state.categories.filter {
+                it.type == state.selectedTab || it.type == CategoryType.BOTH
+            }
+            val parents = typeFiltered.filter { it.parentId == null }
+            val childMap = typeFiltered.filter { it.parentId != null }.groupBy { it.parentId }
+            parents.map { parent ->
+                CategoryGroup(
+                    parent = parent,
+                    children = childMap[parent.id] ?: emptyList(),
+                    isExpanded = parent.id !in state.collapsedParents
+                )
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun selectTab(type: CategoryType) = _uiState.update { it.copy(selectedTab = type) }
 
-    fun startAdd() {
+    fun toggleExpand(parentId: Long) {
+        _uiState.update { state ->
+            val collapsed = state.collapsedParents.toMutableSet()
+            if (parentId in collapsed) collapsed.remove(parentId) else collapsed.add(parentId)
+            state.copy(collapsedParents = collapsed)
+        }
+    }
+
+    fun startAdd(parentId: Long? = null) {
         _uiState.update {
-            it.copy(editingCategory = null, editName = "", editType = it.selectedTab, editIcon = "category", editColor = "#9C27B0", isSaved = false)
+            it.copy(
+                editingCategory = null,
+                editName = "",
+                editType = if (parentId != null) {
+                    // Inherit parent type
+                    it.categories.find { c -> c.id == parentId }?.type ?: it.selectedTab
+                } else it.selectedTab,
+                editIcon = "category",
+                editColor = "#9C27B0",
+                editParentId = parentId,
+                isSaved = false,
+                error = null
+            )
         }
     }
 
     fun startEdit(category: Category) {
         _uiState.update {
-            it.copy(editingCategory = category, editName = category.name, editType = category.type, editIcon = category.icon, editColor = category.color, isSaved = false)
+            it.copy(
+                editingCategory = category,
+                editName = category.name,
+                editType = category.type,
+                editIcon = category.icon,
+                editColor = category.color,
+                editParentId = category.parentId,
+                isSaved = false,
+                error = null
+            )
         }
     }
 
@@ -66,6 +122,7 @@ class CategoryViewModel(
     fun setType(type: CategoryType) = _uiState.update { it.copy(editType = type) }
     fun setIcon(icon: String) = _uiState.update { it.copy(editIcon = icon) }
     fun setColor(color: String) = _uiState.update { it.copy(editColor = color) }
+    fun setParentId(id: Long?) = _uiState.update { it.copy(editParentId = id) }
 
     fun save() {
         val state = _uiState.value
@@ -79,11 +136,12 @@ class CategoryViewModel(
                 name = state.editName,
                 type = state.editType,
                 icon = state.editIcon,
-                color = state.editColor
+                color = state.editColor,
+                parentId = state.editParentId
             )
             if (state.editingCategory == null) addCategoryUseCase(category)
             else updateCategoryUseCase(category)
-            _uiState.update { it.copy(isSaved = true) }
+            _uiState.update { it.copy(isSaved = true, error = null) }
         }
     }
 

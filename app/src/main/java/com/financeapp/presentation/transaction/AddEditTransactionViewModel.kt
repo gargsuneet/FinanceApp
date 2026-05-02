@@ -9,10 +9,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.*
 import com.financeapp.domain.repository.TransactionRepository
-import com.financeapp.domain.usecase.AddTransactionUseCase
-import com.financeapp.domain.usecase.GetAccountsUseCase
-import com.financeapp.domain.usecase.GetCategoriesUseCase
-import com.financeapp.domain.usecase.UpdateTransactionUseCase
+import com.financeapp.domain.usecase.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -35,7 +32,15 @@ data class AddEditTransactionUiState(
     val categories: List<Category> = emptyList(),
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // Inline new account creation
+    val showNewAccountSheet: Boolean = false,
+    val newAccountIsToAccount: Boolean = false,
+    val newAccountName: String = "",
+    val newAccountType: AccountType = AccountType.CASH,
+    val newAccountBalance: String = "0",
+    val newAccountCurrency: String = "USD",
+    val newAccountColor: String = "#2196F3"
 )
 
 class AddEditTransactionViewModel(
@@ -44,6 +49,7 @@ class AddEditTransactionViewModel(
     private val getAccountsUseCase: GetAccountsUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val transactionRepository: TransactionRepository,
+    private val addAccountUseCase: AddAccountUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -53,7 +59,15 @@ class AddEditTransactionViewModel(
     private var originalTransaction: Transaction? = null
 
     init {
+        // Read initial transaction type from navigation arg
+        val typeArg = savedStateHandle.get<String>("transactionType")
+        val initialType = typeArg?.let {
+            runCatching { TransactionType.valueOf(it) }.getOrNull()
+        } ?: TransactionType.EXPENSE
+        _uiState.update { it.copy(type = initialType) }
+
         loadAccountsAndCategories()
+
         val transactionId = savedStateHandle.get<Long>("transactionId") ?: 0L
         if (transactionId > 0) {
             loadTransaction(transactionId)
@@ -114,6 +128,64 @@ class AddEditTransactionViewModel(
     fun setRecurring(isRecurring: Boolean) = _uiState.update { it.copy(isRecurring = isRecurring) }
     fun setRecurringPeriod(period: RecurringPeriod?) = _uiState.update { it.copy(recurringPeriod = period) }
     fun setCurrency(currency: String) = _uiState.update { it.copy(currency = currency) }
+
+    // Inline account creation
+    fun showNewAccountForm(isToAccount: Boolean) {
+        _uiState.update {
+            it.copy(
+                showNewAccountSheet = true,
+                newAccountIsToAccount = isToAccount,
+                newAccountName = "",
+                newAccountType = AccountType.CASH,
+                newAccountBalance = "0",
+                newAccountCurrency = it.currency,
+                newAccountColor = "#2196F3"
+            )
+        }
+    }
+
+    fun hideNewAccountForm() = _uiState.update { it.copy(showNewAccountSheet = false) }
+    fun setNewAccountName(name: String) = _uiState.update { it.copy(newAccountName = name) }
+    fun setNewAccountType(type: AccountType) = _uiState.update { it.copy(newAccountType = type) }
+    fun setNewAccountBalance(balance: String) = _uiState.update { it.copy(newAccountBalance = balance) }
+    fun setNewAccountCurrency(currency: String) = _uiState.update { it.copy(newAccountCurrency = currency) }
+    fun setNewAccountColor(color: String) = _uiState.update { it.copy(newAccountColor = color) }
+
+    fun saveNewAccount() {
+        val state = _uiState.value
+        if (state.newAccountName.isBlank()) {
+            _uiState.update { it.copy(error = "Account name is required") }
+            return
+        }
+        viewModelScope.launch {
+            val account = Account(
+                id = 0L,
+                name = state.newAccountName,
+                type = state.newAccountType,
+                balance = state.newAccountBalance.toDoubleOrNull() ?: 0.0,
+                currency = state.newAccountCurrency,
+                color = state.newAccountColor,
+                icon = accountTypeToIcon(state.newAccountType)
+            )
+            val newId = addAccountUseCase(account)
+            _uiState.update {
+                if (it.newAccountIsToAccount) {
+                    it.copy(toAccountId = newId, showNewAccountSheet = false)
+                } else {
+                    it.copy(selectedAccountId = newId, showNewAccountSheet = false)
+                }
+            }
+        }
+    }
+
+    private fun accountTypeToIcon(type: AccountType) = when (type) {
+        AccountType.CASH -> "payments"
+        AccountType.BANK -> "account_balance"
+        AccountType.CREDIT_CARD -> "credit_card"
+        AccountType.SAVINGS -> "savings"
+        AccountType.INVESTMENT -> "trending_up"
+        AccountType.OTHER -> "account_balance_wallet"
+    }
 
     fun save() {
         val state = _uiState.value
@@ -176,6 +248,7 @@ class AddEditTransactionViewModel(
                 app.getAccountsUseCase,
                 app.getCategoriesUseCase,
                 app.transactionRepository,
+                app.addAccountUseCase,
                 savedStateHandle
             ) as T
         }
