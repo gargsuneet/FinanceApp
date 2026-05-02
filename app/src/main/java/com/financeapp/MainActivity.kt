@@ -1,16 +1,21 @@
 package com.financeapp
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +29,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Check for previous crash
+        val prefs = getSharedPreferences("crash_prefs", Context.MODE_PRIVATE)
+        val lastCrash = prefs.getString("last_crash", null)
+        if (lastCrash != null) {
+            prefs.edit().remove("last_crash").apply()
+            setContent {
+                MaterialTheme {
+                    CrashScreen(crashLog = lastCrash, onRetry = {
+                        finish()
+                        startActivity(intent)
+                    })
+                }
+            }
+            return
+        }
+
         setContent {
             FinanceAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -31,6 +53,44 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CrashScreen(crashLog: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(40.dp))
+        Text("⚠️ App Crashed", fontSize = 22.sp, color = Color.Red)
+        Spacer(Modifier.height(8.dp))
+        Text("Please share this error with support:", fontSize = 14.sp)
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            color = Color(0xFFF5F5F5),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Text(
+                text = crashLog,
+                modifier = Modifier
+                    .padding(12.dp)
+                    .verticalScroll(rememberScrollState()),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                color = Color(0xFF212121)
+            )
+        }
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
+            Text("Retry")
+        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
