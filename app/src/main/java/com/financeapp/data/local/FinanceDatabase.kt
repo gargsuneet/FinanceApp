@@ -80,13 +80,14 @@ abstract class FinanceDatabase : RoomDatabase() {
             }
 
             private fun seedDefaultAccounts(db: SupportSQLiteDatabase) {
+                // Always include ALL NOT NULL columns explicitly
                 db.execSQL(
-                    "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    arrayOf("Cash", "CASH", 500.0, "USD", "#4CAF50", "payments", 1)
+                    "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal, creditLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("Cash", "CASH", 500.0, "USD", "#4CAF50", "payments", 1, 0.0)
                 )
                 db.execSQL(
-                    "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    arrayOf("Bank Account", "BANK", 2500.0, "USD", "#2196F3", "account_balance", 1)
+                    "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal, creditLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("Bank Account", "BANK", 2500.0, "USD", "#2196F3", "account_balance", 1, 0.0)
                 )
                 db.execSQL(
                     "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal, creditLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -97,25 +98,26 @@ abstract class FinanceDatabase : RoomDatabase() {
             private fun seedSampleTransactions(db: SupportSQLiteDatabase) {
                 val now = System.currentTimeMillis()
                 val day = 86400000L
+                // Always include fee, points, isRecurring for all transaction inserts
                 db.execSQL(
-                    "INSERT INTO transactions (type, amount, accountId, categoryId, note, date) VALUES (?, ?, ?, ?, ?, ?)",
-                    arrayOf("INCOME", 3000.0, 2, 14, "Monthly salary", now - day * 5)
+                    "INSERT INTO transactions (type, amount, fee, points, accountId, categoryId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("INCOME", 3000.0, 0.0, 0.0, 2, 14, "Monthly salary", now - day * 5, 0, "USD")
                 )
                 db.execSQL(
-                    "INSERT INTO transactions (type, amount, accountId, categoryId, note, date, fee) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    arrayOf("EXPENSE", 45.50, 1, 1, "Grocery shopping", now - day * 3, 0.0)
+                    "INSERT INTO transactions (type, amount, fee, points, accountId, categoryId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("EXPENSE", 45.50, 0.0, 0.0, 1, 1, "Grocery shopping", now - day * 3, 0, "USD")
                 )
                 db.execSQL(
-                    "INSERT INTO transactions (type, amount, accountId, categoryId, note, date) VALUES (?, ?, ?, ?, ?, ?)",
-                    arrayOf("EXPENSE", 120.0, 2, 5, "Electric bill", now - day * 2)
+                    "INSERT INTO transactions (type, amount, fee, points, accountId, categoryId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("EXPENSE", 120.0, 0.0, 0.0, 2, 5, "Electric bill", now - day * 2, 0, "USD")
                 )
                 db.execSQL(
-                    "INSERT INTO transactions (type, amount, accountId, categoryId, note, date, points) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    arrayOf("EXPENSE", 89.99, 3, 3, "Online shopping", now - day, 90.0)
+                    "INSERT INTO transactions (type, amount, fee, points, accountId, categoryId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("EXPENSE", 89.99, 0.0, 90.0, 3, 3, "Online shopping", now - day, 0, "USD")
                 )
                 db.execSQL(
-                    "INSERT INTO transactions (type, amount, accountId, toAccountId, note, date) VALUES (?, ?, ?, ?, ?, ?)",
-                    arrayOf("TRANSFER", 500.0, 2, 1, "Cash withdrawal", now - day * 4)
+                    "INSERT INTO transactions (type, amount, fee, points, accountId, toAccountId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    arrayOf("TRANSFER", 500.0, 0.0, 0.0, 2, 1, "Cash withdrawal", now - day * 4, 0, "USD")
                 )
             }
         }
