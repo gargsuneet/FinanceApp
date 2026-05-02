@@ -8,9 +8,8 @@ import com.financeapp.domain.model.TransactionType
 import com.financeapp.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-class TransactionRepositoryImpl @Inject constructor(
+class TransactionRepositoryImpl (
     private val dao: TransactionDao
 ) : TransactionRepository {
 

@@ -6,9 +6,8 @@ import com.financeapp.domain.model.Budget
 import com.financeapp.domain.repository.BudgetRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-class BudgetRepositoryImpl @Inject constructor(
+class BudgetRepositoryImpl (
     private val dao: BudgetDao
 ) : BudgetRepository {
 

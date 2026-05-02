@@ -2,18 +2,20 @@ package com.financeapp.presentation.transaction
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.*
 import com.financeapp.domain.repository.TransactionRepository
 import com.financeapp.domain.usecase.AddTransactionUseCase
 import com.financeapp.domain.usecase.GetAccountsUseCase
 import com.financeapp.domain.usecase.GetCategoriesUseCase
 import com.financeapp.domain.usecase.UpdateTransactionUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import javax.inject.Inject
 
 data class AddEditTransactionUiState(
     val id: Long = 0,
@@ -36,8 +38,7 @@ data class AddEditTransactionUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class AddEditTransactionViewModel @Inject constructor(
+class AddEditTransactionViewModel(
     private val addTransactionUseCase: AddTransactionUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAccountsUseCase: GetAccountsUseCase,
@@ -164,4 +165,19 @@ class AddEditTransactionViewModel @Inject constructor(
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+            val savedStateHandle = extras.createSavedStateHandle()
+            return AddEditTransactionViewModel(
+                app.addTransactionUseCase,
+                app.updateTransactionUseCase,
+                app.getAccountsUseCase,
+                app.getCategoriesUseCase,
+                app.transactionRepository,
+                savedStateHandle
+            ) as T
+        }
+    }
 }

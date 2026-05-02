@@ -1,19 +1,19 @@
 package com.financeapp.presentation.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.MonthlySummary
 import com.financeapp.domain.model.Transaction
 import com.financeapp.domain.usecase.GetMonthlySummaryUseCase
 import com.financeapp.domain.usecase.GetTransactionsUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import javax.inject.Inject
 
 data class HomeUiState(
     val summary: MonthlySummary = MonthlySummary(0.0, 0.0, month = 1, year = 2024),
@@ -22,8 +22,7 @@ data class HomeUiState(
     val isLoading: Boolean = true
 )
 
-@HiltViewModel
-class HomeViewModel @Inject constructor(
+class HomeViewModel(
     private val getMonthlySummaryUseCase: GetMonthlySummaryUseCase,
     private val getTransactionsUseCase: GetTransactionsUseCase
 ) : ViewModel() {
@@ -55,5 +54,11 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            HomeViewModel(app.getMonthlySummaryUseCase, app.getTransactionsUseCase) as T
     }
 }

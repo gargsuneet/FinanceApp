@@ -1,17 +1,17 @@
 package com.financeapp.presentation.account
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Account
 import com.financeapp.domain.model.AccountType
 import com.financeapp.domain.usecase.AddAccountUseCase
 import com.financeapp.domain.usecase.DeleteAccountUseCase
 import com.financeapp.domain.usecase.GetAccountsUseCase
 import com.financeapp.domain.usecase.UpdateAccountUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class AccountUiState(
     val accounts: List<Account> = emptyList(),
@@ -29,8 +29,7 @@ data class AccountUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class AccountViewModel @Inject constructor(
+class AccountViewModel(
     private val getAccountsUseCase: GetAccountsUseCase,
     private val addAccountUseCase: AddAccountUseCase,
     private val updateAccountUseCase: UpdateAccountUseCase,
@@ -130,5 +129,16 @@ class AccountViewModel @Inject constructor(
         AccountType.SAVINGS -> "savings"
         AccountType.INVESTMENT -> "trending_up"
         AccountType.OTHER -> "account_balance_wallet"
+    }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            AccountViewModel(
+                app.getAccountsUseCase,
+                app.addAccountUseCase,
+                app.updateAccountUseCase,
+                app.deleteAccountUseCase
+            ) as T
     }
 }

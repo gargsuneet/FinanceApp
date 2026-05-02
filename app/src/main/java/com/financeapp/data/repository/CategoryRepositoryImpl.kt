@@ -7,9 +7,8 @@ import com.financeapp.domain.model.CategoryType
 import com.financeapp.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-class CategoryRepositoryImpl @Inject constructor(
+class CategoryRepositoryImpl (
     private val dao: CategoryDao
 ) : CategoryRepository {
 

@@ -11,9 +11,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
-import javax.inject.Inject
 
-class GetTransactionsUseCase @Inject constructor(
+class GetTransactionsUseCase(
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository,
     private val categoryRepo: CategoryRepository
@@ -76,7 +75,7 @@ class GetTransactionsUseCase @Inject constructor(
         }
 }
 
-class AddTransactionUseCase @Inject constructor(
+class AddTransactionUseCase (
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository
 ) {
@@ -94,7 +93,7 @@ class AddTransactionUseCase @Inject constructor(
     }
 }
 
-class UpdateTransactionUseCase @Inject constructor(
+class UpdateTransactionUseCase (
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository
 ) {
@@ -121,7 +120,7 @@ class UpdateTransactionUseCase @Inject constructor(
     }
 }
 
-class DeleteTransactionUseCase @Inject constructor(
+class DeleteTransactionUseCase (
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository
 ) {
@@ -139,43 +138,43 @@ class DeleteTransactionUseCase @Inject constructor(
     }
 }
 
-class GetAccountsUseCase @Inject constructor(
+class GetAccountsUseCase (
     private val accountRepo: AccountRepository
 ) {
     operator fun invoke(): Flow<List<Account>> = accountRepo.getAll()
     fun totalBalance(): Flow<Double?> = accountRepo.getTotalBalance()
 }
 
-class AddAccountUseCase @Inject constructor(private val accountRepo: AccountRepository) {
+class AddAccountUseCase (private val accountRepo: AccountRepository) {
     suspend operator fun invoke(account: Account): Long = accountRepo.insert(account)
 }
 
-class UpdateAccountUseCase @Inject constructor(private val accountRepo: AccountRepository) {
+class UpdateAccountUseCase (private val accountRepo: AccountRepository) {
     suspend operator fun invoke(account: Account) = accountRepo.update(account)
 }
 
-class DeleteAccountUseCase @Inject constructor(private val accountRepo: AccountRepository) {
+class DeleteAccountUseCase (private val accountRepo: AccountRepository) {
     suspend operator fun invoke(account: Account) = accountRepo.delete(account)
 }
 
-class GetCategoriesUseCase @Inject constructor(private val categoryRepo: CategoryRepository) {
+class GetCategoriesUseCase (private val categoryRepo: CategoryRepository) {
     operator fun invoke(): Flow<List<Category>> = categoryRepo.getAll()
     fun byType(type: String): Flow<List<Category>> = categoryRepo.getByType(type)
 }
 
-class AddCategoryUseCase @Inject constructor(private val categoryRepo: CategoryRepository) {
+class AddCategoryUseCase (private val categoryRepo: CategoryRepository) {
     suspend operator fun invoke(category: Category): Long = categoryRepo.insert(category)
 }
 
-class UpdateCategoryUseCase @Inject constructor(private val categoryRepo: CategoryRepository) {
+class UpdateCategoryUseCase (private val categoryRepo: CategoryRepository) {
     suspend operator fun invoke(category: Category) = categoryRepo.update(category)
 }
 
-class DeleteCategoryUseCase @Inject constructor(private val categoryRepo: CategoryRepository) {
+class DeleteCategoryUseCase (private val categoryRepo: CategoryRepository) {
     suspend operator fun invoke(category: Category) = categoryRepo.delete(category)
 }
 
-class GetBudgetsUseCase @Inject constructor(
+class GetBudgetsUseCase (
     private val budgetRepo: BudgetRepository,
     private val categoryRepo: CategoryRepository
 ) {
@@ -195,19 +194,19 @@ class GetBudgetsUseCase @Inject constructor(
         }
 }
 
-class AddBudgetUseCase @Inject constructor(private val budgetRepo: BudgetRepository) {
+class AddBudgetUseCase (private val budgetRepo: BudgetRepository) {
     suspend operator fun invoke(budget: Budget): Long = budgetRepo.insert(budget)
 }
 
-class UpdateBudgetUseCase @Inject constructor(private val budgetRepo: BudgetRepository) {
+class UpdateBudgetUseCase (private val budgetRepo: BudgetRepository) {
     suspend operator fun invoke(budget: Budget) = budgetRepo.update(budget)
 }
 
-class DeleteBudgetUseCase @Inject constructor(private val budgetRepo: BudgetRepository) {
+class DeleteBudgetUseCase (private val budgetRepo: BudgetRepository) {
     suspend operator fun invoke(budget: Budget) = budgetRepo.delete(budget)
 }
 
-class GetMonthlySummaryUseCase @Inject constructor(
+class GetMonthlySummaryUseCase (
     private val transactionRepo: TransactionRepository
 ) {
     operator fun invoke(month: Int, year: Int): Flow<MonthlySummary> {
@@ -233,7 +232,7 @@ class GetMonthlySummaryUseCase @Inject constructor(
     }
 }
 
-class GetCategorySpendingUseCase @Inject constructor(
+class GetCategorySpendingUseCase (
     private val transactionRepo: TransactionRepository,
     private val categoryRepo: CategoryRepository
 ) {
@@ -258,7 +257,7 @@ class GetCategorySpendingUseCase @Inject constructor(
         }
 }
 
-class ExportToCsvUseCase @Inject constructor(
+class ExportToCsvUseCase (
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository,
     private val categoryRepo: CategoryRepository

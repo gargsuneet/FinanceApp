@@ -1,7 +1,9 @@
 package com.financeapp.presentation.budget
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Budget
 import com.financeapp.domain.model.Category
 import com.financeapp.domain.usecase.AddBudgetUseCase
@@ -9,11 +11,9 @@ import com.financeapp.domain.usecase.DeleteBudgetUseCase
 import com.financeapp.domain.usecase.GetBudgetsUseCase
 import com.financeapp.domain.usecase.GetCategoriesUseCase
 import com.financeapp.domain.usecase.UpdateBudgetUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import javax.inject.Inject
 
 data class BudgetUiState(
     val budgets: List<Budget> = emptyList(),
@@ -29,8 +29,7 @@ data class BudgetUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class BudgetViewModel @Inject constructor(
+class BudgetViewModel(
     private val getBudgetsUseCase: GetBudgetsUseCase,
     private val addBudgetUseCase: AddBudgetUseCase,
     private val updateBudgetUseCase: UpdateBudgetUseCase,
@@ -107,4 +106,16 @@ class BudgetViewModel @Inject constructor(
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            BudgetViewModel(
+                app.getBudgetsUseCase,
+                app.addBudgetUseCase,
+                app.updateBudgetUseCase,
+                app.deleteBudgetUseCase,
+                app.getCategoriesUseCase
+            ) as T
+    }
 }

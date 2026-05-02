@@ -1,17 +1,17 @@
 package com.financeapp.presentation.category
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Category
 import com.financeapp.domain.model.CategoryType
 import com.financeapp.domain.usecase.AddCategoryUseCase
 import com.financeapp.domain.usecase.DeleteCategoryUseCase
 import com.financeapp.domain.usecase.GetCategoriesUseCase
 import com.financeapp.domain.usecase.UpdateCategoryUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CategoryUiState(
     val categories: List<Category> = emptyList(),
@@ -26,8 +26,7 @@ data class CategoryUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class CategoryViewModel @Inject constructor(
+class CategoryViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val updateCategoryUseCase: UpdateCategoryUseCase,
@@ -93,4 +92,15 @@ class CategoryViewModel @Inject constructor(
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            CategoryViewModel(
+                app.getCategoriesUseCase,
+                app.addCategoryUseCase,
+                app.updateCategoryUseCase,
+                app.deleteCategoryUseCase
+            ) as T
+    }
 }

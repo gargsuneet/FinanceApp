@@ -19,7 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Budget
 import com.financeapp.presentation.components.BudgetProgressBar
 import com.financeapp.presentation.components.categoryIconVector
@@ -32,7 +33,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetScreen(
-    viewModel: BudgetViewModel = hiltViewModel()
+    viewModel: BudgetViewModel = viewModel(factory = BudgetViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     var showAddEditSheet by remember { mutableStateOf(false) }

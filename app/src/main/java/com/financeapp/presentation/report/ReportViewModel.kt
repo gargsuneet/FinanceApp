@@ -1,16 +1,16 @@
 package com.financeapp.presentation.report
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.CategorySpending
 import com.financeapp.domain.model.MonthlySummary
 import com.financeapp.domain.usecase.GetCategorySpendingUseCase
 import com.financeapp.domain.usecase.GetMonthlySummaryUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import javax.inject.Inject
 
 data class ReportUiState(
     val categorySpending: List<CategorySpending> = emptyList(),
@@ -21,8 +21,7 @@ data class ReportUiState(
     val isLoading: Boolean = true
 )
 
-@HiltViewModel
-class ReportViewModel @Inject constructor(
+class ReportViewModel(
     private val getCategorySpendingUseCase: GetCategorySpendingUseCase,
     private val getMonthlySummaryUseCase: GetMonthlySummaryUseCase
 ) : ViewModel() {
@@ -73,5 +72,11 @@ class ReportViewModel @Inject constructor(
     fun setMonthYear(month: Int, year: Int) {
         _uiState.update { it.copy(selectedMonth = month, selectedYear = year, isLoading = true) }
         loadReports()
+    }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            ReportViewModel(app.getCategorySpendingUseCase, app.getMonthlySummaryUseCase) as T
     }
 }

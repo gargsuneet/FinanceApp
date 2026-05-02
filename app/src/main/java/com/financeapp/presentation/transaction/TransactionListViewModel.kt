@@ -1,18 +1,18 @@
 package com.financeapp.presentation.transaction
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Transaction
 import com.financeapp.domain.model.TransactionType
 import com.financeapp.domain.usecase.DeleteTransactionUseCase
 import com.financeapp.domain.usecase.GetTransactionsUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import javax.inject.Inject
 
 data class TransactionListUiState(
     val transactions: List<Transaction> = emptyList(),
@@ -25,9 +25,7 @@ data class TransactionListUiState(
     val filterCategoryId: Long? = null
 )
 
-@HiltViewModel
-class TransactionListViewModel @Inject constructor(
-    private val getTransactionsUseCase: GetTransactionsUseCase,
+class TransactionListViewModel(    private val getTransactionsUseCase: GetTransactionsUseCase,
     private val deleteTransactionUseCase: DeleteTransactionUseCase
 ) : ViewModel() {
 
@@ -106,5 +104,11 @@ class TransactionListViewModel @Inject constructor(
         viewModelScope.launch {
             deleteTransactionUseCase(transaction)
         }
+    }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            TransactionListViewModel(app.getTransactionsUseCase, app.deleteTransactionUseCase) as T
     }
 }

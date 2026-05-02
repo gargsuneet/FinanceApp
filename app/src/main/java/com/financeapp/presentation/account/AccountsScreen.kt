@@ -21,7 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Account
 import com.financeapp.domain.model.AccountType
 import com.financeapp.presentation.components.ACCOUNT_COLORS
@@ -33,7 +34,7 @@ import com.financeapp.presentation.components.parseColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountsScreen(
-    viewModel: AccountViewModel = hiltViewModel()
+    viewModel: AccountViewModel = viewModel(factory = AccountViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     var showAddEditSheet by remember { mutableStateOf(false) }

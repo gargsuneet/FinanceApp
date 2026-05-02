@@ -1,11 +1,10 @@
 package com.financeapp.presentation.settings
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.usecase.ExportToCsvUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +14,6 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 
 data class SettingsUiState(
     val defaultCurrency: String = "USD",
@@ -23,10 +21,9 @@ data class SettingsUiState(
     val isExporting: Boolean = false
 )
 
-@HiltViewModel
-class SettingsViewModel @Inject constructor(
+class SettingsViewModel(
     private val exportToCsvUseCase: ExportToCsvUseCase,
-    @ApplicationContext private val context: Context
+    private val app: FinanceApplication
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -39,7 +36,7 @@ class SettingsViewModel @Inject constructor(
                 val csv = exportToCsvUseCase()
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 val fileName = "finance_export_$timestamp.csv"
-                val dir = context.getExternalFilesDir(null) ?: context.filesDir
+                val dir = app.getExternalFilesDir(null) ?: app.filesDir
                 val file = File(dir, fileName)
                 file.writeText(csv)
                 _uiState.update { it.copy(exportMessage = "Exported to ${file.absolutePath}", isExporting = false) }
@@ -51,4 +48,10 @@ class SettingsViewModel @Inject constructor(
 
     fun clearMessage() = _uiState.update { it.copy(exportMessage = null) }
     fun setCurrency(currency: String) = _uiState.update { it.copy(defaultCurrency = currency) }
+
+    class Factory(private val app: FinanceApplication) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            SettingsViewModel(app.exportToCsvUseCase, app) as T
+    }
 }

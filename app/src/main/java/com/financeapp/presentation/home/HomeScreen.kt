@@ -18,7 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.financeapp.FinanceApplication
 import com.financeapp.presentation.components.SummaryCard
 import com.financeapp.presentation.components.TransactionItem
 import com.financeapp.presentation.components.formatAmount
@@ -31,7 +32,7 @@ fun HomeScreen(
     onAddTransaction: () -> Unit,
     onTransactionClick: (Long) -> Unit,
     onSeeAllClick: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
 

@@ -24,7 +24,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.RecurringPeriod
 import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.components.CURRENCIES
@@ -36,7 +37,7 @@ import com.financeapp.presentation.components.parseColor
 @Composable
 fun AddEditTransactionScreen(
     onNavigateBack: () -> Unit,
-    viewModel: AddEditTransactionViewModel = hiltViewModel()
+    viewModel: AddEditTransactionViewModel = viewModel(factory = AddEditTransactionViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }

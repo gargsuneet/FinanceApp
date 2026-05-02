@@ -20,7 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.Category
 import com.financeapp.domain.model.CategoryType
 import com.financeapp.presentation.components.ACCOUNT_COLORS
@@ -31,7 +32,7 @@ import com.financeapp.presentation.components.parseColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
-    viewModel: CategoryViewModel = hiltViewModel()
+    viewModel: CategoryViewModel = viewModel(factory = CategoryViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     val filtered by viewModel.filteredCategories.collectAsState()

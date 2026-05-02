@@ -7,9 +7,8 @@ import com.financeapp.domain.model.AccountType
 import com.financeapp.domain.repository.AccountRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-class AccountRepositoryImpl @Inject constructor(
+class AccountRepositoryImpl (
     private val dao: AccountDao
 ) : AccountRepository {
 
