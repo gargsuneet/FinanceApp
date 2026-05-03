@@ -61,7 +61,7 @@ class HomeViewModel(
                         isLoading = false
                     )
                 }
-            }.collect()
+            }.collect {}
         }
     }
 
