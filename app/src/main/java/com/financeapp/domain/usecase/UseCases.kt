@@ -4,6 +4,7 @@ import com.financeapp.domain.model.*
 import com.financeapp.domain.repository.AccountRepository
 import com.financeapp.domain.repository.BudgetRepository
 import com.financeapp.domain.repository.CategoryRepository
+import com.financeapp.domain.repository.SyncAccountRepository
 import com.financeapp.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -282,4 +283,14 @@ class ExportToCsvUseCase (
         }
         return sb.toString()
     }
+}
+
+class GetSyncAccountsUseCase(private val repo: SyncAccountRepository) {
+    operator fun invoke(): Flow<List<SyncAccount>> = repo.getAll()
+}
+class AddSyncAccountUseCase(private val repo: SyncAccountRepository) {
+    suspend operator fun invoke(syncAccount: SyncAccount): Long = repo.insert(syncAccount)
+}
+class DeleteSyncAccountUseCase(private val repo: SyncAccountRepository) {
+    suspend operator fun invoke(syncAccount: SyncAccount) = repo.delete(syncAccount)
 }

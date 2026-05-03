@@ -19,6 +19,8 @@ data class Transaction(
     val isRecurring: Boolean = false,
     val recurringPeriod: RecurringPeriod? = null,
     val currency: String = "USD",
+    val syncAccountId: Long? = null,
+    val syncAccountName: String = "",
     // Resolved display fields
     val accountName: String = "",
     val toAccountName: String = "",
@@ -77,4 +79,12 @@ data class CategorySpending(
     val categoryIcon: String,
     val amount: Double,
     val percentage: Float
+)
+
+data class SyncAccount(
+    val id: Long = 0,
+    val email: String,
+    val name: String,
+    val color: String = "#2196F3",
+    val isOwner: Boolean = false
 )

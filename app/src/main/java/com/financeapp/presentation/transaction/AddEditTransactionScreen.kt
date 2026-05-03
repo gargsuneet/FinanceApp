@@ -300,6 +300,46 @@ fun AddEditTransactionScreen(
                     }
                 }
 
+                // Sync Account row
+                item {
+                    FormRow(label = "Sync") {
+                        var syncExpanded by remember { mutableStateOf(false) }
+                        val selectedSyncName = state.syncAccounts.find { it.id == state.syncAccountId }?.name ?: "None"
+                        ExposedDropdownMenuBox(
+                            expanded = syncExpanded,
+                            onExpandedChange = { syncExpanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedSyncName,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = syncExpanded) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedBorderColor = Color.Transparent
+                                ),
+                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = syncExpanded,
+                                onDismissRequest = { syncExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("None") },
+                                    onClick = { viewModel.setSyncAccountId(null); syncExpanded = false }
+                                )
+                                state.syncAccounts.forEach { sa ->
+                                    DropdownMenuItem(
+                                        text = { Text(sa.name) },
+                                        onClick = { viewModel.setSyncAccountId(sa.id); syncExpanded = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Fee row
                 item {
                     FormRow(label = "Fee") {

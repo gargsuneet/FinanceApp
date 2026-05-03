@@ -72,7 +72,8 @@ class TransactionRepositoryImpl (
         date = date,
         isRecurring = isRecurring,
         recurringPeriod = recurringPeriod?.let { RecurringPeriod.valueOf(it) },
-        currency = currency
+        currency = currency,
+        syncAccountId = syncAccountId
     )
 
     private fun Transaction.toEntity() = TransactionEntity(
@@ -88,6 +89,7 @@ class TransactionRepositoryImpl (
         date = date,
         isRecurring = isRecurring,
         recurringPeriod = recurringPeriod?.name,
-        currency = currency
+        currency = currency,
+        syncAccountId = syncAccountId
     )
 }

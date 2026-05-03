@@ -7,10 +7,12 @@ import com.financeapp.data.local.FinanceDatabase
 import com.financeapp.data.repository.AccountRepositoryImpl
 import com.financeapp.data.repository.BudgetRepositoryImpl
 import com.financeapp.data.repository.CategoryRepositoryImpl
+import com.financeapp.data.repository.SyncAccountRepositoryImpl
 import com.financeapp.data.repository.TransactionRepositoryImpl
 import com.financeapp.domain.repository.AccountRepository
 import com.financeapp.domain.repository.BudgetRepository
 import com.financeapp.domain.repository.CategoryRepository
+import com.financeapp.domain.repository.SyncAccountRepository
 import com.financeapp.domain.repository.TransactionRepository
 import com.financeapp.domain.usecase.*
 
@@ -26,6 +28,8 @@ class FinanceApplication : Application() {
     lateinit var categoryRepository: CategoryRepository
         private set
     lateinit var budgetRepository: BudgetRepository
+        private set
+    lateinit var syncAccountRepository: SyncAccountRepository
         private set
 
     lateinit var getTransactionsUseCase: GetTransactionsUseCase
@@ -66,6 +70,12 @@ class FinanceApplication : Application() {
         private set
     lateinit var exportToCsvUseCase: ExportToCsvUseCase
         private set
+    lateinit var getSyncAccountsUseCase: GetSyncAccountsUseCase
+        private set
+    lateinit var addSyncAccountUseCase: AddSyncAccountUseCase
+        private set
+    lateinit var deleteSyncAccountUseCase: DeleteSyncAccountUseCase
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -76,12 +86,15 @@ class FinanceApplication : Application() {
     private fun initDependencies() {
         database = Room.databaseBuilder(this, FinanceDatabase::class.java, FinanceDatabase.DATABASE_NAME)
             .addCallback(FinanceDatabase.seedCallback)
+            .addMigrations(FinanceDatabase.MIGRATION_1_2)
+            .fallbackToDestructiveMigration()
             .build()
 
         transactionRepository = TransactionRepositoryImpl(database.transactionDao())
         accountRepository = AccountRepositoryImpl(database.accountDao())
         categoryRepository = CategoryRepositoryImpl(database.categoryDao())
         budgetRepository = BudgetRepositoryImpl(database.budgetDao())
+        syncAccountRepository = SyncAccountRepositoryImpl(database.syncAccountDao())
 
         getTransactionsUseCase = GetTransactionsUseCase(transactionRepository, accountRepository, categoryRepository)
         addTransactionUseCase = AddTransactionUseCase(transactionRepository, accountRepository)
@@ -102,6 +115,9 @@ class FinanceApplication : Application() {
         deleteBudgetUseCase = DeleteBudgetUseCase(budgetRepository)
         getCategorySpendingUseCase = GetCategorySpendingUseCase(transactionRepository, categoryRepository)
         exportToCsvUseCase = ExportToCsvUseCase(transactionRepository, accountRepository, categoryRepository)
+        getSyncAccountsUseCase = GetSyncAccountsUseCase(syncAccountRepository)
+        addSyncAccountUseCase = AddSyncAccountUseCase(syncAccountRepository)
+        deleteSyncAccountUseCase = DeleteSyncAccountUseCase(syncAccountRepository)
     }
 
     companion object {

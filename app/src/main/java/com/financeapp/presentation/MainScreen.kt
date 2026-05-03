@@ -128,7 +128,12 @@ fun MainScreen(
                 CategoriesScreen()
             }
             composable("settings") {
-                SettingsScreen()
+                SettingsScreen(onSyncAccountsClick = { navController.navigate("sync_accounts") })
+            }
+            composable("sync_accounts") {
+                com.financeapp.presentation.sync.SyncAccountsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }
@@ -138,7 +143,8 @@ fun MainScreen(
 fun MoreScreen(
     onTransactionsClick: () -> Unit,
     onCategoriesClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onSyncAccountsClick: () -> Unit = {}
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),

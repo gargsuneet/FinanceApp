@@ -2,14 +2,17 @@ package com.financeapp.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.financeapp.data.local.dao.AccountDao
 import com.financeapp.data.local.dao.BudgetDao
 import com.financeapp.data.local.dao.CategoryDao
+import com.financeapp.data.local.dao.SyncAccountDao
 import com.financeapp.data.local.dao.TransactionDao
 import com.financeapp.data.local.entity.AccountEntity
 import com.financeapp.data.local.entity.BudgetEntity
 import com.financeapp.data.local.entity.CategoryEntity
+import com.financeapp.data.local.entity.SyncAccountEntity
 import com.financeapp.data.local.entity.TransactionEntity
 
 @Database(
@@ -17,9 +20,10 @@ import com.financeapp.data.local.entity.TransactionEntity
         TransactionEntity::class,
         AccountEntity::class,
         CategoryEntity::class,
-        BudgetEntity::class
+        BudgetEntity::class,
+        SyncAccountEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -27,9 +31,22 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun syncAccountDao(): SyncAccountDao
 
     companion object {
         const val DATABASE_NAME = "finance_database"
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS sync_accounts (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, email TEXT NOT NULL, name TEXT NOT NULL, color TEXT NOT NULL DEFAULT '#2196F3', isOwner INTEGER NOT NULL DEFAULT 0)"
+                )
+                database.execSQL(
+                    "ALTER TABLE transactions ADD COLUMN syncAccountId INTEGER REFERENCES sync_accounts(id) ON DELETE SET NULL"
+                )
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_syncAccountId ON transactions(syncAccountId)")
+            }
+        }
 
         val seedCallback = object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
@@ -41,7 +58,6 @@ abstract class FinanceDatabase : RoomDatabase() {
 
             private fun seedDefaultCategories(db: SupportSQLiteDatabase) {
                 val categories = listOf(
-                    // Expense categories
                     Triple("Food & Dining", "EXPENSE", "restaurant"),
                     Triple("Transportation", "EXPENSE", "directions_car"),
                     Triple("Shopping", "EXPENSE", "shopping_cart"),
@@ -55,7 +71,6 @@ abstract class FinanceDatabase : RoomDatabase() {
                     Triple("Sports & Fitness", "EXPENSE", "fitness_center"),
                     Triple("Gifts & Donations", "EXPENSE", "card_giftcard"),
                     Triple("Other Expense", "EXPENSE", "more_horiz"),
-                    // Income categories
                     Triple("Salary", "INCOME", "work"),
                     Triple("Freelance", "INCOME", "laptop"),
                     Triple("Investment", "INCOME", "trending_up"),
@@ -80,7 +95,6 @@ abstract class FinanceDatabase : RoomDatabase() {
             }
 
             private fun seedDefaultAccounts(db: SupportSQLiteDatabase) {
-                // Always include ALL NOT NULL columns explicitly
                 db.execSQL(
                     "INSERT INTO accounts (name, type, balance, currency, color, icon, includeInTotal, creditLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     arrayOf("Cash", "CASH", 500.0, "USD", "#4CAF50", "payments", 1, 0.0)
@@ -98,7 +112,6 @@ abstract class FinanceDatabase : RoomDatabase() {
             private fun seedSampleTransactions(db: SupportSQLiteDatabase) {
                 val now = System.currentTimeMillis()
                 val day = 86400000L
-                // Always include fee, points, isRecurring for all transaction inserts
                 db.execSQL(
                     "INSERT INTO transactions (type, amount, fee, points, accountId, categoryId, note, date, isRecurring, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     arrayOf("INCOME", 3000.0, 0.0, 0.0, 2, 14, "Monthly salary", now - day * 5, 0, "USD")

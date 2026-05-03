@@ -25,9 +25,15 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["categoryId"],
             onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
+            entity = SyncAccountEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["syncAccountId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
-    indices = [Index("accountId"), Index("toAccountId"), Index("categoryId")]
+    indices = [Index("accountId"), Index("toAccountId"), Index("categoryId"), Index("syncAccountId")]
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -42,5 +48,6 @@ data class TransactionEntity(
     val date: Long,
     val isRecurring: Boolean = false,
     val recurringPeriod: String? = null,
-    val currency: String = "USD"
+    val currency: String = "USD",
+    val syncAccountId: Long? = null
 )

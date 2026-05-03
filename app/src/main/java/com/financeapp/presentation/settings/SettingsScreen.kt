@@ -1,5 +1,9 @@
 package com.financeapp.presentation.settings
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,13 +25,37 @@ import com.financeapp.FinanceApplication
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onSyncAccountsClick: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { viewModel.importCsv(it) }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.exportShareUri.collect { uri ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share CSV"))
+        }
+    }
 
     LaunchedEffect(state.exportMessage) {
         state.exportMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
+        }
+    }
+
+    LaunchedEffect(state.importMessage) {
+        state.importMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearMessage()
         }
@@ -73,7 +102,35 @@ fun SettingsScreen(
                             subtitle = "Budget alerts & reminders",
                             onClick = {}
                         )
+                        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(
+                            icon = Icons.Default.Lock,
+                            iconColor = Color(0xFF607D8B),
+                            title = "PIN Lock",
+                            subtitle = if (state.isPinEnabled) "Enabled" else "Disabled",
+                            onClick = viewModel::togglePin
+                        )
                     }
+                }
+            }
+
+            item {
+                Text("Sync", fontSize = 12.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    SettingsRow(
+                        icon = Icons.Default.People,
+                        iconColor = Color(0xFF2196F3),
+                        title = "Sync Accounts",
+                        subtitle = "Share book with others",
+                        onClick = onSyncAccountsClick
+                    )
                 }
             }
 
@@ -92,9 +149,17 @@ fun SettingsScreen(
                             icon = Icons.Default.FileDownload,
                             iconColor = Color(0xFF2196F3),
                             title = "Export to CSV",
-                            subtitle = "Export all transactions",
+                            subtitle = "Share transactions as CSV",
                             onClick = viewModel::exportToCsv,
                             isLoading = state.isExporting
+                        )
+                        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(
+                            icon = Icons.Default.FileUpload,
+                            iconColor = Color(0xFF4CAF50),
+                            title = "Import from CSV",
+                            subtitle = "Import transactions from CSV file",
+                            onClick = { importLauncher.launch("text/*") }
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(

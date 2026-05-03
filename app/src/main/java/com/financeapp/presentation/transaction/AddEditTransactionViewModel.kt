@@ -30,6 +30,8 @@ data class AddEditTransactionUiState(
     val currency: String = "USD",
     val accounts: List<Account> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val syncAccounts: List<SyncAccount> = emptyList(),
+    val syncAccountId: Long? = null,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
@@ -48,6 +50,7 @@ class AddEditTransactionViewModel(
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAccountsUseCase: GetAccountsUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getSyncAccountsUseCase: GetSyncAccountsUseCase,
     private val transactionRepository: TransactionRepository,
     private val addAccountUseCase: AddAccountUseCase,
     savedStateHandle: SavedStateHandle
@@ -59,7 +62,6 @@ class AddEditTransactionViewModel(
     private var originalTransaction: Transaction? = null
 
     init {
-        // Read initial transaction type from navigation arg
         val typeArg = savedStateHandle.get<String>("transactionType")
         val initialType = typeArg?.let {
             runCatching { TransactionType.valueOf(it) }.getOrNull()
@@ -78,12 +80,14 @@ class AddEditTransactionViewModel(
         viewModelScope.launch {
             combine(
                 getAccountsUseCase(),
-                getCategoriesUseCase()
-            ) { accounts, categories ->
+                getCategoriesUseCase(),
+                getSyncAccountsUseCase()
+            ) { accounts, categories, syncAccounts ->
                 _uiState.update { state ->
                     state.copy(
                         accounts = accounts,
                         categories = categories,
+                        syncAccounts = syncAccounts,
                         selectedAccountId = state.selectedAccountId ?: accounts.firstOrNull()?.id
                     )
                 }
@@ -109,7 +113,8 @@ class AddEditTransactionViewModel(
                         date = transaction.date,
                         isRecurring = transaction.isRecurring,
                         recurringPeriod = transaction.recurringPeriod,
-                        currency = transaction.currency
+                        currency = transaction.currency,
+                        syncAccountId = transaction.syncAccountId
                     )
                 }
             }
@@ -128,6 +133,7 @@ class AddEditTransactionViewModel(
     fun setRecurring(isRecurring: Boolean) = _uiState.update { it.copy(isRecurring = isRecurring) }
     fun setRecurringPeriod(period: RecurringPeriod?) = _uiState.update { it.copy(recurringPeriod = period) }
     fun setCurrency(currency: String) = _uiState.update { it.copy(currency = currency) }
+    fun setSyncAccountId(id: Long?) = _uiState.update { it.copy(syncAccountId = id) }
 
     // Inline account creation
     fun showNewAccountForm(isToAccount: Boolean) {
@@ -216,7 +222,8 @@ class AddEditTransactionViewModel(
             date = state.date,
             isRecurring = state.isRecurring,
             recurringPeriod = state.recurringPeriod,
-            currency = state.currency
+            currency = state.currency,
+            syncAccountId = state.syncAccountId
         )
 
         viewModelScope.launch {
@@ -247,6 +254,7 @@ class AddEditTransactionViewModel(
                 app.updateTransactionUseCase,
                 app.getAccountsUseCase,
                 app.getCategoriesUseCase,
+                app.getSyncAccountsUseCase,
                 app.transactionRepository,
                 app.addAccountUseCase,
                 savedStateHandle
