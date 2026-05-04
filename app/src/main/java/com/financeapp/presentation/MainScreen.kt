@@ -54,7 +54,8 @@ val bottomNavItems = listOf(
 @Composable
 fun MainScreen(
     onNavigateToAddTransaction: (TransactionType) -> Unit,
-    onNavigateToEditTransaction: (Long) -> Unit
+    onNavigateToEditTransaction: (Long) -> Unit,
+    onNavigateToPinSetup: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -132,7 +133,10 @@ fun MainScreen(
                 CategoriesScreen()
             }
             composable("settings") {
-                SettingsScreen(onSyncAccountsClick = { navController.navigate("sync_accounts") })
+                SettingsScreen(
+                    onSyncAccountsClick = { navController.navigate("sync_accounts") },
+                    onNavigateToPinSetup = onNavigateToPinSetup
+                )
             }
             composable("sync_accounts") {
                 com.financeapp.presentation.sync.SyncAccountsScreen(

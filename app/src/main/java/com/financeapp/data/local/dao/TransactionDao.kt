@@ -54,6 +54,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE isRecurring = 1")
     fun getRecurringTransactions(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions WHERE isRecurring = 1 AND recurringNextDate IS NOT NULL AND recurringNextDate <= :now")
+    suspend fun getRecurringDue(now: Long): List<TransactionEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: TransactionEntity): Long
 

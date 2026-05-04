@@ -3,6 +3,9 @@ package com.financeapp
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.financeapp.data.local.FinanceDatabase
 import com.financeapp.data.repository.AccountRepositoryImpl
 import com.financeapp.data.repository.BudgetRepositoryImpl
@@ -15,6 +18,10 @@ import com.financeapp.domain.repository.CategoryRepository
 import com.financeapp.domain.repository.SyncAccountRepository
 import com.financeapp.domain.repository.TransactionRepository
 import com.financeapp.domain.usecase.*
+import com.financeapp.notification.BudgetCheckWorker
+import com.financeapp.notification.NotificationHelper
+import com.financeapp.notification.RecurringTransactionWorker
+import java.util.concurrent.TimeUnit
 
 class FinanceApplication : Application() {
 
@@ -81,12 +88,23 @@ class FinanceApplication : Application() {
         super.onCreate()
         instance = this
         initDependencies()
+        NotificationHelper.createChannels(this)
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "recurring_check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
+        )
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "budget_check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<BudgetCheckWorker>(1, TimeUnit.DAYS).build()
+        )
     }
 
     private fun initDependencies() {
         database = Room.databaseBuilder(this, FinanceDatabase::class.java, FinanceDatabase.DATABASE_NAME)
             .addCallback(FinanceDatabase.seedCallback)
-            .addMigrations(FinanceDatabase.MIGRATION_1_2, FinanceDatabase.MIGRATION_2_3)
+            .addMigrations(FinanceDatabase.MIGRATION_1_2, FinanceDatabase.MIGRATION_2_3, FinanceDatabase.MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
 

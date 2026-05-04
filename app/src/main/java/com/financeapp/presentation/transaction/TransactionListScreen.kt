@@ -32,6 +32,17 @@ fun TransactionListScreen(
     val state by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
+    if (showFilterSheet) {
+        FilterBottomSheet(
+            state = state,
+            onDismiss = { showFilterSheet = false },
+            onSetTypeFilter = { viewModel.setTypeFilter(it) },
+            onSetDateFilter = { start, end -> viewModel.setDateFilter(start, end) },
+            onSetAmountFilter = { min, max -> viewModel.setAmountFilter(min, max) },
+            onClearFilters = { viewModel.clearFilters() }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

@@ -21,6 +21,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.financeapp.data.local.dataStore
+import com.financeapp.presentation.pin.PinScreen
+import com.financeapp.presentation.pin.PinSetupScreen
+import kotlinx.coroutines.flow.first
 import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.MainScreen
 
@@ -113,13 +118,27 @@ fun FinanceAppTheme(content: @Composable () -> Unit) {
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "main") {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var pinChecked by remember { mutableStateOf(false) }
+    var startDestination by remember { mutableStateOf("main") }
+
+    LaunchedEffect(Unit) {
+        val prefs = context.dataStore.data.first()
+        val pinEnabled = prefs[booleanPreferencesKey("pin_enabled")] ?: false
+        startDestination = if (pinEnabled) "pin_entry" else "main"
+        pinChecked = true
+    }
+
+    if (!pinChecked) return
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("main") {
             MainScreen(
                 onNavigateToAddTransaction = { type ->
                     navController.navigate("add_transaction/${type.name}")
                 },
-                onNavigateToEditTransaction = { id -> navController.navigate("edit_transaction/$id") }
+                onNavigateToEditTransaction = { id -> navController.navigate("edit_transaction/$id") },
+                onNavigateToPinSetup = { navController.navigate("pin_setup") }
             )
         }
         composable(
@@ -136,6 +155,21 @@ fun AppNavHost() {
         ) {
             com.financeapp.presentation.transaction.AddEditTransactionScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("pin_setup") {
+            PinSetupScreen(
+                onPinSet = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() }
+            )
+        }
+        composable("pin_entry") {
+            PinScreen(
+                onPinVerified = {
+                    navController.navigate("main") {
+                        popUpTo("pin_entry") { inclusive = true }
+                    }
+                }
             )
         }
     }

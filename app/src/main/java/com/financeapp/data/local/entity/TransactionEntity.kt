@@ -50,5 +50,6 @@ data class TransactionEntity(
     val recurringPeriod: String? = null,
     val currency: String = "USD",
     val syncAccountId: Long? = null,
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    val recurringNextDate: Long? = null
 )

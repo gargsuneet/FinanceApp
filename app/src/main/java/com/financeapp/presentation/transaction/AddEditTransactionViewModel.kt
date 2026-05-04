@@ -49,7 +49,8 @@ data class AddEditTransactionUiState(
     val newCategoryColor: String = "#9C27B0",
     val newCategoryParentId: Long? = null,
     // Photo attachment
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    val recurringNextDate: Long? = null
 )
 
 class AddEditTransactionViewModel(
@@ -217,6 +218,17 @@ class AddEditTransactionViewModel(
             return
         }
 
+        val recurringNextDate = if (state.isRecurring) {
+            val cal = java.util.Calendar.getInstance()
+            when (state.recurringPeriod) {
+                RecurringPeriod.DAILY -> { cal.add(java.util.Calendar.DAY_OF_YEAR, 1); cal.timeInMillis }
+                RecurringPeriod.WEEKLY -> { cal.add(java.util.Calendar.WEEK_OF_YEAR, 1); cal.timeInMillis }
+                RecurringPeriod.MONTHLY -> { cal.add(java.util.Calendar.MONTH, 1); cal.timeInMillis }
+                RecurringPeriod.YEARLY -> { cal.add(java.util.Calendar.YEAR, 1); cal.timeInMillis }
+                null -> { cal.add(java.util.Calendar.MONTH, 1); cal.timeInMillis }
+            }
+        } else null
+
         val transaction = Transaction(
             id = state.id,
             type = state.type,
@@ -232,7 +244,8 @@ class AddEditTransactionViewModel(
             recurringPeriod = state.recurringPeriod,
             currency = state.currency,
             syncAccountId = state.syncAccountId,
-            photoUri = state.photoUri
+            photoUri = state.photoUri,
+            recurringNextDate = recurringNextDate
         )
 
         viewModelScope.launch {

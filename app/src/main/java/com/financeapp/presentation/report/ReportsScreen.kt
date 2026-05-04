@@ -20,8 +20,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.financeapp.FinanceApplication
 import com.financeapp.presentation.components.BarChart
 import com.financeapp.presentation.components.PieChart
+import com.financeapp.presentation.components.TrendChart
 import com.financeapp.presentation.components.formatAmount
 import com.financeapp.presentation.components.parseColor
+import com.financeapp.domain.model.MonthlyTrend
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -198,7 +200,7 @@ fun ReportsScreen(
                             if (state.monthlySummaries.isEmpty()) {
                                 Text("No trend data available", color = Color(0xFF9E9E9E))
                             } else {
-                                BarChart(summaries = state.monthlySummaries, modifier = Modifier.fillMaxWidth())
+                                TrendChart(data = state.trendData, modifier = Modifier.fillMaxWidth())
                             }
                         }
                     }

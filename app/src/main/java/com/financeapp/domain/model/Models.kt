@@ -21,6 +21,7 @@ data class Transaction(
     val currency: String = "USD",
     val syncAccountId: Long? = null,
     val photoUri: String? = null,
+    val recurringNextDate: Long? = null,
     val syncAccountName: String = "",
     // Resolved display fields
     val accountName: String = "",
@@ -88,4 +89,12 @@ data class SyncAccount(
     val name: String,
     val color: String = "#2196F3",
     val isOwner: Boolean = false
+)
+
+data class MonthlyTrend(
+    val month: Int,
+    val year: Int,
+    val monthLabel: String,
+    val income: Double,
+    val expense: Double
 )

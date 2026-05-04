@@ -356,6 +356,59 @@ fun AddEditTransactionScreen(
                     }
                 }
 
+                // Recurring row
+                item {
+                    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Repeat, contentDescription = "Recurring",
+                                tint = Color(0xFF757575), modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Recurring", fontSize = 13.sp, color = Color(0xFF757575),
+                                fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f)
+                            )
+                            Switch(
+                                checked = state.isRecurring,
+                                onCheckedChange = { viewModel.setRecurring(it) }
+                            )
+                        }
+                        if (state.isRecurring) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Spacer(Modifier.width(28.dp))
+                                Text("Period", fontSize = 13.sp, color = Color(0xFF757575), modifier = Modifier.width(64.dp))
+                                com.financeapp.domain.model.RecurringPeriod.values().forEach { period ->
+                                    val isSelected = state.recurringPeriod == period
+                                    Surface(
+                                        modifier = Modifier.padding(end = 8.dp).clickable { viewModel.setRecurringPeriod(period) },
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFF0F0F0)
+                                    ) {
+                                        Text(
+                                            period.name.lowercase().replaceFirstChar { it.uppercase() },
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            fontSize = 12.sp,
+                                            color = if (isSelected) Color.White else Color(0xFF424242)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Divider(color = Color(0xFFF5F5F5))
+                    }
+                }
+
                 // Photo attachment row
                 item {
                     val context = LocalContext.current

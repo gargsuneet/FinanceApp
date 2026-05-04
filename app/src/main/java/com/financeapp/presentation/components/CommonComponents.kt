@@ -24,6 +24,34 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+val CURRENCIES = listOf("USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "MXN",
+    "BRL", "KRW", "SGD", "HKD", "NOK", "SEK", "DKK", "NZD", "ZAR", "AED")
+
+val ACCOUNT_COLORS = listOf(
+    "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3",
+    "#03A9F4", "#00BCD4", "#009688", "#4CAF50", "#8BC34A", "#CDDC39",
+    "#FF9800", "#FF5722", "#795548", "#607D8B", "#F06292", "#AED581", "#4DB6AC", "#80DEEA"
+)
+
+val CATEGORY_COLORS = listOf(
+    "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3",
+    "#03A9F4", "#00BCD4", "#009688", "#4CAF50", "#8BC34A", "#CDDC39",
+    "#FF9800", "#FF5722", "#795548", "#607D8B", "#F06292", "#AED581", "#4DB6AC", "#80DEEA"
+)
+
+val CATEGORY_ICONS: List<String> = listOf(
+    "restaurant", "directions_car", "shopping_cart", "movie", "receipt",
+    "local_hospital", "school", "flight", "spa", "home",
+    "fitness_center", "card_giftcard", "more_horiz", "work", "laptop",
+    "trending_up", "apartment", "redeem", "attach_money", "payments",
+    "account_balance", "credit_card", "savings", "category", "food_bank",
+    "local_cafe", "local_bar", "directions_bus", "directions_bike", "train",
+    "local_taxi", "shopping_bag", "local_mall", "tv", "sports_esports",
+    "music_note", "electric_bolt", "water_drop", "wifi", "phone",
+    "healing", "medication", "menu_book", "science", "beach_access",
+    "hotel", "park", "sports", "sports_soccer", "volunteer_activism"
+)
+
 @Composable
 fun TransactionItem(
     transaction: Transaction,
@@ -219,6 +247,7 @@ fun categoryIconVector(iconName: String): ImageVector {
         "home" -> Icons.Default.Home
         "fitness_center" -> Icons.Default.FitnessCenter
         "card_giftcard" -> Icons.Default.CardGiftcard
+        "more_horiz" -> Icons.Default.MoreHoriz
         "work" -> Icons.Default.Work
         "laptop" -> Icons.Default.Laptop
         "trending_up" -> Icons.Default.TrendingUp
@@ -232,6 +261,32 @@ fun categoryIconVector(iconName: String): ImageVector {
         "account_balance_wallet" -> Icons.Default.AccountBalanceWallet
         "transfer_within_a_station" -> Icons.Default.SwapHoriz
         "swap_horiz" -> Icons.Default.SwapHoriz
+        "food_bank" -> Icons.Default.FoodBank
+        "local_cafe" -> Icons.Default.LocalCafe
+        "local_bar" -> Icons.Default.LocalBar
+        "directions_bus" -> Icons.Default.DirectionsBus
+        "directions_bike" -> Icons.Default.DirectionsBike
+        "train" -> Icons.Default.Train
+        "local_taxi" -> Icons.Default.LocalTaxi
+        "shopping_bag" -> Icons.Default.ShoppingBag
+        "local_mall" -> Icons.Default.LocalMall
+        "tv" -> Icons.Default.Tv
+        "sports_esports" -> Icons.Default.SportsEsports
+        "music_note" -> Icons.Default.MusicNote
+        "electric_bolt" -> Icons.Default.ElectricBolt
+        "water_drop" -> Icons.Default.WaterDrop
+        "wifi" -> Icons.Default.Wifi
+        "phone" -> Icons.Default.Phone
+        "healing" -> Icons.Default.Healing
+        "medication" -> Icons.Default.Medication
+        "menu_book" -> Icons.Default.MenuBook
+        "science" -> Icons.Default.Science
+        "beach_access" -> Icons.Default.BeachAccess
+        "hotel" -> Icons.Default.Hotel
+        "park" -> Icons.Default.Park
+        "sports" -> Icons.Default.Sports
+        "sports_soccer" -> Icons.Default.SportsSoccer
+        "volunteer_activism" -> Icons.Default.VolunteerActivism
         else -> Icons.Default.Category
     }
 }

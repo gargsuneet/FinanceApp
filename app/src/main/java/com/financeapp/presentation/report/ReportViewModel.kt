@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.CategorySpending
+import com.financeapp.domain.model.MonthlyTrend
 import com.financeapp.domain.model.MonthlySummary
 import com.financeapp.domain.usecase.GetCategorySpendingUseCase
 import com.financeapp.domain.usecase.GetMonthlySummaryUseCase
@@ -15,6 +16,7 @@ import java.util.Calendar
 data class ReportUiState(
     val categorySpending: List<CategorySpending> = emptyList(),
     val monthlySummaries: List<MonthlySummary> = emptyList(),
+    val trendData: List<MonthlyTrend> = emptyList(),
     val currentSummary: MonthlySummary = MonthlySummary(0.0, 0.0, month = 1, year = 2024),
     val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
     val selectedYear: Int = Calendar.getInstance().get(Calendar.YEAR),
@@ -65,7 +67,11 @@ class ReportViewModel(
                 getMonthlySummaryUseCase(month, year).firstOrNull()?.let { summaries.add(it) }
                 cal.add(Calendar.MONTH, -1)
             }
-            _uiState.update { it.copy(monthlySummaries = summaries.reversed()) }
+            val monthLabels = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+            val trends = summaries.map { s ->
+                MonthlyTrend(s.month, s.year, monthLabels.getOrElse(s.month-1){"?"}, s.income, s.expense)
+            }
+            _uiState.update { it.copy(monthlySummaries = summaries.reversed(), trendData = trends.reversed()) }
         }
     }
 

@@ -22,7 +22,9 @@ data class TransactionListUiState(
     val filterStartDate: Long? = null,
     val filterEndDate: Long? = null,
     val filterAccountId: Long? = null,
-    val filterCategoryId: Long? = null
+    val filterCategoryId: Long? = null,
+    val minAmount: Double? = null,
+    val maxAmount: Double? = null
 )
 
 class TransactionListViewModel(    private val getTransactionsUseCase: GetTransactionsUseCase,
@@ -59,6 +61,8 @@ class TransactionListViewModel(    private val getTransactionsUseCase: GetTransa
         state.filterCategoryId?.let { catId -> result = result.filter { it.categoryId == catId } }
         state.filterStartDate?.let { start -> result = result.filter { it.date >= start } }
         state.filterEndDate?.let { end -> result = result.filter { it.date <= end } }
+        state.minAmount?.let { min -> result = result.filter { it.amount >= min } }
+        state.maxAmount?.let { max -> result = result.filter { it.amount <= max } }
         return result
     }
 
@@ -87,6 +91,11 @@ class TransactionListViewModel(    private val getTransactionsUseCase: GetTransa
         loadTransactions()
     }
 
+    fun setAmountFilter(min: Double?, max: Double?) {
+        _uiState.update { it.copy(minAmount = min, maxAmount = max) }
+        loadTransactions()
+    }
+
     fun clearFilters() {
         _uiState.update {
             it.copy(
@@ -94,7 +103,9 @@ class TransactionListViewModel(    private val getTransactionsUseCase: GetTransa
                 filterStartDate = null,
                 filterEndDate = null,
                 filterAccountId = null,
-                filterCategoryId = null
+                filterCategoryId = null,
+                minAmount = null,
+                maxAmount = null
             )
         }
         loadTransactions()

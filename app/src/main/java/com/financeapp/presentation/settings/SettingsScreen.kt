@@ -26,14 +26,34 @@ import com.financeapp.FinanceApplication
 @Composable
 fun SettingsScreen(
     onSyncAccountsClick: () -> Unit = {},
+    onNavigateToPinSetup: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
+    var showCurrencyDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
+    var showPinDisableDialog by remember { mutableStateOf(false) }
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { viewModel.importCsv(it) }
+    }
+
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri: Uri? ->
+        uri?.let { viewModel.backupDatabase(it) }
+    }
+
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            pendingRestoreUri = it
+            showRestoreDialog = true
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -44,6 +64,17 @@ fun SettingsScreen(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(intent, "Share CSV"))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.excelShareUri.collect { uri ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share Excel"))
         }
     }
 
@@ -59,6 +90,119 @@ fun SettingsScreen(
             snackbarHostState.showSnackbar(it)
             viewModel.clearMessage()
         }
+    }
+
+    LaunchedEffect(state.backupMessage) {
+        state.backupMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
+        }
+    }
+
+    // Currency Dialog
+    if (showCurrencyDialog) {
+        AlertDialog(
+            onDismissRequest = { showCurrencyDialog = false },
+            title = { Text("Select Currency") },
+            text = {
+                LazyColumn {
+                    items(viewModel.availableCurrencies.size) { idx ->
+                        val currency = viewModel.availableCurrencies[idx]
+                        val rate = state.exchangeRates[currency]
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                viewModel.setCurrency(currency)
+                                showCurrencyDialog = false
+                            }.padding(vertical = 12.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(currency, fontWeight = FontWeight.Medium)
+                            if (rate != null) {
+                                Text(String.format("%.4f", rate), color = Color(0xFF757575), fontSize = 12.sp)
+                            }
+                        }
+                        if (idx < viewModel.availableCurrencies.size - 1) {
+                            Divider(color = Color(0xFFF5F5F5))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCurrencyDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Notifications Dialog
+    if (showNotificationsDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotificationsDialog = false },
+            title = { Text("Notifications") },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Enable Notifications")
+                        Switch(checked = state.notificationsEnabled, onCheckedChange = { viewModel.setNotificationsEnabled(it) })
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Daily Reminder")
+                        Switch(checked = state.dailyReminderEnabled, onCheckedChange = { viewModel.setDailyReminderEnabled(it) })
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Budget Alerts")
+                        Switch(checked = state.budgetAlertsEnabled, onCheckedChange = { viewModel.setBudgetAlertsEnabled(it) })
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showNotificationsDialog = false }) { Text("Done") }
+            }
+        )
+    }
+
+    // PIN Disable Confirmation
+    if (showPinDisableDialog) {
+        AlertDialog(
+            onDismissRequest = { showPinDisableDialog = false },
+            title = { Text("Disable PIN Lock") },
+            text = { Text("Are you sure you want to disable PIN lock?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.disablePin(); showPinDisableDialog = false }) { Text("Disable") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPinDisableDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Restore Confirmation
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDialog = false; pendingRestoreUri = null },
+            title = { Text("Restore Database") },
+            text = { Text("This will replace all current data with the backup. The app will restart. Continue?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingRestoreUri?.let { viewModel.restoreDatabase(it) }
+                    showRestoreDialog = false
+                }) { Text("Restore") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDialog = false; pendingRestoreUri = null }) { Text("Cancel") }
+            }
+        )
     }
 
     Scaffold(
@@ -92,15 +236,18 @@ fun SettingsScreen(
                             iconColor = Color(0xFF4CAF50),
                             title = "Default Currency",
                             subtitle = state.defaultCurrency,
-                            onClick = {}
+                            onClick = {
+                                viewModel.fetchAndSaveRates()
+                                showCurrencyDialog = true
+                            }
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(
                             icon = Icons.Default.Notifications,
                             iconColor = Color(0xFFFF9800),
                             title = "Notifications",
-                            subtitle = "Budget alerts & reminders",
-                            onClick = {}
+                            subtitle = if (state.notificationsEnabled) "Enabled" else "Budget alerts & reminders",
+                            onClick = { showNotificationsDialog = true }
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(
@@ -108,7 +255,13 @@ fun SettingsScreen(
                             iconColor = Color(0xFF607D8B),
                             title = "PIN Lock",
                             subtitle = if (state.isPinEnabled) "Enabled" else "Disabled",
-                            onClick = viewModel::togglePin
+                            onClick = {
+                                if (state.isPinEnabled) {
+                                    showPinDisableDialog = true
+                                } else {
+                                    onNavigateToPinSetup()
+                                }
+                            }
                         )
                     }
                 }
@@ -155,6 +308,15 @@ fun SettingsScreen(
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(
+                            icon = Icons.Default.TableChart,
+                            iconColor = Color(0xFF009688),
+                            title = "Export to Excel",
+                            subtitle = "Share transactions as XLSX",
+                            onClick = viewModel::exportToExcel,
+                            isLoading = state.isExporting
+                        )
+                        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(
                             icon = Icons.Default.FileUpload,
                             iconColor = Color(0xFF4CAF50),
                             title = "Import from CSV",
@@ -166,8 +328,8 @@ fun SettingsScreen(
                             icon = Icons.Default.Backup,
                             iconColor = Color(0xFF9C27B0),
                             title = "Backup Data",
-                            subtitle = "Save data to local storage",
-                            onClick = {}
+                            subtitle = "Save database to local storage",
+                            onClick = { backupLauncher.launch("finance_backup.db") }
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(
@@ -175,7 +337,7 @@ fun SettingsScreen(
                             iconColor = Color(0xFFF44336),
                             title = "Restore Data",
                             subtitle = "Restore from backup",
-                            onClick = {}
+                            onClick = { restoreLauncher.launch("*/*") }
                         )
                     }
                 }
