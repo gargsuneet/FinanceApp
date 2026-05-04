@@ -18,7 +18,7 @@ class BudgetCheckWorker(
             val cal = Calendar.getInstance()
             val month = cal.get(Calendar.MONTH) + 1
             val year = cal.get(Calendar.YEAR)
-            val budgets = app.getBudgetsUseCase(month, year).first()
+            val budgets = app.getBudgetsUseCase.byMonthYear(month, year).first()
             budgets.forEach { budget ->
                 if (budget.amount > 0) {
                     val percentage = ((budget.spent / budget.amount) * 100).toInt()
