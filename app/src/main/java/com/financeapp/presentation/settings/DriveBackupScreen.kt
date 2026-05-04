@@ -26,11 +26,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun isDriveConfigured() =
     !GoogleDriveService.GOOGLE_WEB_CLIENT_ID.startsWith("YOUR_")
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun DriveBackupScreen(
     onNavigateBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(FinanceApplication.instance))

@@ -1,6 +1,5 @@
 package com.financeapp.presentation.report
 
-import android.app.DatePickerDialog
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,9 +38,49 @@ fun ReportsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
-    var showCustomRangePicker by remember { mutableStateOf(false) }
     var customRangeActive by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
+    var pendingStartMs by remember { mutableStateOf(0L) }
+
+    // Start date picker dialog
+    if (showStartPicker) {
+        val pickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showStartPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val sel = pickerState.selectedDateMillis
+                    if (sel != null) {
+                        pendingStartMs = sel
+                        showStartPicker = false
+                        showEndPicker = true
+                    }
+                }) { Text("Next") }
+            },
+            dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = pickerState, title = { Text("Select start date", modifier = Modifier.padding(16.dp)) }) }
+    }
+
+    // End date picker dialog
+    if (showEndPicker) {
+        val pickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showEndPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val sel = pickerState.selectedDateMillis
+                    if (sel != null) {
+                        val endMs = sel + 86399999L // end of day
+                        customRangeActive = true
+                        viewModel.setCustomRange(pendingStartMs, endMs)
+                        showEndPicker = false
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = pickerState, title = { Text("Select end date", modifier = Modifier.padding(16.dp)) }) }
+    }
 
     Scaffold(
         topBar = {
@@ -122,38 +160,7 @@ fun ReportsScreen(
                             )
                             FilterChip(
                                 selected = customRangeActive,
-                                onClick = {
-                                    // Show start date picker
-                                    val today = Calendar.getInstance()
-                                    DatePickerDialog(
-                                        context,
-                                        { _, startYear, startMonth, startDay ->
-                                            val startCal = Calendar.getInstance().apply {
-                                                set(startYear, startMonth, startDay, 0, 0, 0)
-                                                set(Calendar.MILLISECOND, 0)
-                                            }
-                                            val startMs = startCal.timeInMillis
-                                            DatePickerDialog(
-                                                context,
-                                                { _, endYear, endMonth, endDay ->
-                                                    val endCal = Calendar.getInstance().apply {
-                                                        set(endYear, endMonth, endDay, 23, 59, 59)
-                                                        set(Calendar.MILLISECOND, 999)
-                                                    }
-                                                    val endMs = endCal.timeInMillis
-                                                    customRangeActive = true
-                                                    viewModel.setCustomRange(startMs, endMs)
-                                                },
-                                                today.get(Calendar.YEAR),
-                                                today.get(Calendar.MONTH),
-                                                today.get(Calendar.DAY_OF_MONTH)
-                                            ).show()
-                                        },
-                                        today.get(Calendar.YEAR),
-                                        today.get(Calendar.MONTH),
-                                        today.get(Calendar.DAY_OF_MONTH)
-                                    ).show()
-                                },
+                                onClick = { showStartPicker = true },
                                 label = { Text("Custom Range", fontSize = 12.sp) },
                                 leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             )
