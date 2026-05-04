@@ -2,8 +2,6 @@ package com.financeapp.presentation.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -16,6 +14,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.financeapp.domain.model.CategorySpending
@@ -29,64 +28,63 @@ fun PieChart(
     modifier: Modifier = Modifier
 ) {
     if (data.isEmpty()) return
-
     val total = data.sumOf { it.amount }
     val colors = data.map { parseColor(it.categoryColor) }
 
-    Column(modifier = modifier) {
-        Canvas(modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally)) {
-            val diameter = min(size.width, size.height) * 0.85f
-            val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
-            var startAngle = -90f
-
-            data.forEachIndexed { index, item ->
-                val sweepAngle = (item.amount / total * 360f).toFloat()
-                drawArc(
-                    color = colors[index],
-                    startAngle = startAngle,
-                    sweepAngle = sweepAngle,
-                    useCenter = true,
-                    topLeft = topLeft,
-                    size = Size(diameter, diameter)
-                )
-                drawArc(
-                    color = Color.White,
-                    startAngle = startAngle,
-                    sweepAngle = sweepAngle,
-                    useCenter = true,
-                    topLeft = topLeft,
-                    size = Size(diameter, diameter),
-                    style = Stroke(width = 2f)
-                )
-                startAngle += sweepAngle
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Donut canvas
+        Box(modifier = Modifier.size(160.dp), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val diameter = min(size.width, size.height) * 0.9f
+                val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
+                var startAngle = -90f
+                data.forEachIndexed { index, item ->
+                    val sweepAngle = (item.amount / total * 360f).toFloat()
+                    drawArc(
+                        color = colors[index],
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = Size(diameter, diameter),
+                        style = Stroke(width = diameter * 0.18f)
+                    )
+                    startAngle += sweepAngle
+                }
             }
-            // Center hole
-            drawCircle(
-                color = Color.White,
-                radius = diameter / 4f,
-                center = Offset(size.width / 2, size.height / 2)
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Total", fontSize = 10.sp, color = Color(0xFF9E9E9E))
+                Text(
+                    formatAmount(total),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF212121)
+                )
+            }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Legend
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
-        ) {
-            items(data.take(8)) { item ->
+        Spacer(Modifier.width(12.dp))
+        // Legend column
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            data.take(6).forEachIndexed { index, item ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Canvas(modifier = Modifier.size(10.dp)) {
-                        drawCircle(color = parseColor(item.categoryColor))
+                        drawCircle(color = colors[index])
                     }
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.categoryName, fontSize = 12.sp, color = Color(0xFF424242), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(formatAmount(item.amount), fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                    }
                     Text(
-                        "${item.categoryName} ${String.format("%.1f", item.percentage)}%",
+                        "${String.format("%.1f", item.percentage)}%",
                         fontSize = 11.sp,
-                        color = Color(0xFF424242)
+                        color = colors[index],
+                        fontWeight = FontWeight.Medium
                     )
                 }
+            }
+            if (data.size > 6) {
+                Text("+${data.size - 6} more", fontSize = 11.sp, color = Color(0xFF9E9E9E))
             }
         }
     }

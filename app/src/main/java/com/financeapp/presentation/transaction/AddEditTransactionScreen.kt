@@ -83,7 +83,13 @@ fun AddEditTransactionScreen(
         val left = calcLeft.toDoubleOrNull() ?: 0.0
         return if (calcOp != null) {
             val right = calcRight.toDoubleOrNull() ?: 0.0
-            if (calcOp == '+') left + right else left - right
+            when (calcOp) {
+                '+' -> left + right
+                '-' -> left - right
+                '×' -> left * right
+                '÷' -> if (right != 0.0) left / right else left
+                else -> left
+            }
         } else left
     }
 
@@ -100,7 +106,19 @@ fun AddEditTransactionScreen(
                     calcLeft = calcLeft.dropLast(1)
                 }
             }
-            "+", "-" -> {
+            "=" -> {
+                if (calcOp != null && calcRight.isNotEmpty()) {
+                    val result = evalAmount()
+                    calcLeft = if (result == result.toLong().toDouble() && result >= 0) {
+                        result.toLong().toString()
+                    } else {
+                        String.format("%.2f", result)
+                    }
+                    calcRight = ""
+                    calcOp = null
+                }
+            }
+            "+", "-", "×", "÷" -> {
                 if (calcLeft.isNotEmpty()) {
                     // Evaluate any pending operation first
                     if (calcOp != null) {
@@ -608,9 +626,9 @@ fun AddEditTransactionScreen(
             ) {
                 val keyRows = listOf(
                     listOf("7", "8", "9", "⌫"),
-                    listOf("4", "5", "6", "+"),
-                    listOf("1", "2", "3", "-"),
-                    listOf(".", "0", "00", "✓")
+                    listOf("4", "5", "6", "×"),
+                    listOf("1", "2", "3", "÷"),
+                    listOf(".", "0", "+", "-")
                 )
                 keyRows.forEach { row ->
                     Row(
@@ -618,15 +636,17 @@ fun AddEditTransactionScreen(
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         row.forEach { key ->
-                            val isAction = key in listOf("+", "-", "⌫", "✓")
+                            val isAction = key in listOf("+", "-", "×", "÷", "⌫", "✓", "=")
                             val isSave = key == "✓"
                             val keyBg = when {
                                 isSave -> typeColor
+                                key == "×" || key == "÷" -> Color(0xFFE0E0E0)
                                 isAction -> Color(0xFFE0E0E0)
                                 else -> Color.White
                             }
                             val keyTextColor = when {
                                 isSave -> Color.White
+                                key == "×" || key == "÷" -> Color(0xFF9C27B0)
                                 key == "+" -> Color(0xFF4CAF50)
                                 key == "-" -> Color(0xFFF44336)
                                 key == "⌫" -> Color(0xFF757575)
@@ -652,6 +672,48 @@ fun AddEditTransactionScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+                // Last row: = (weight 3) + ✓ (weight 1)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .weight(3f)
+                            .height(52.dp)
+                            .clickable { onCalcKey("=") },
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFF00897B),
+                        shadowElevation = 0.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "=",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                            .clickable { handleSave() },
+                        shape = RoundedCornerShape(4.dp),
+                        color = typeColor,
+                        shadowElevation = 0.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "✓",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                     }
                 }

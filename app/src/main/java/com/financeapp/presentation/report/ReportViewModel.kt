@@ -20,7 +20,9 @@ data class ReportUiState(
     val currentSummary: MonthlySummary = MonthlySummary(0.0, 0.0, month = 1, year = 2024),
     val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
     val selectedYear: Int = Calendar.getInstance().get(Calendar.YEAR),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val customRangeStart: Long? = null,
+    val customRangeEnd: Long? = null
 )
 
 class ReportViewModel(
@@ -38,12 +40,19 @@ class ReportViewModel(
 
     private fun loadReports() {
         val state = _uiState.value
-        val cal = Calendar.getInstance()
-        cal.set(state.selectedYear, state.selectedMonth - 1, 1, 0, 0, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        val start = cal.timeInMillis
-        cal.set(state.selectedYear, state.selectedMonth - 1, cal.getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
-        val end = cal.timeInMillis
+        val start: Long
+        val end: Long
+        if (state.customRangeStart != null && state.customRangeEnd != null) {
+            start = state.customRangeStart
+            end = state.customRangeEnd
+        } else {
+            val cal = Calendar.getInstance()
+            cal.set(state.selectedYear, state.selectedMonth - 1, 1, 0, 0, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            start = cal.timeInMillis
+            cal.set(state.selectedYear, state.selectedMonth - 1, cal.getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+            end = cal.timeInMillis
+        }
 
         viewModelScope.launch {
             combine(
@@ -77,6 +86,16 @@ class ReportViewModel(
 
     fun setMonthYear(month: Int, year: Int) {
         _uiState.update { it.copy(selectedMonth = month, selectedYear = year, isLoading = true) }
+        loadReports()
+    }
+
+    fun setCustomRange(startMs: Long, endMs: Long) {
+        _uiState.update { it.copy(customRangeStart = startMs, customRangeEnd = endMs, isLoading = true) }
+        loadReports()
+    }
+
+    fun clearCustomRange() {
+        _uiState.update { it.copy(customRangeStart = null, customRangeEnd = null, isLoading = true) }
         loadReports()
     }
 

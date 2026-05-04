@@ -135,9 +135,34 @@ fun TransactionListScreen(
             } else if (state.transactions.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ReceiptLong, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFBDBDBD))
-                        Spacer(Modifier.height(8.dp))
-                        Text("No transactions found", color = Color(0xFF9E9E9E))
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(Color(0xFF00897B).copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ReceiptLong,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = Color(0xFF00897B).copy(alpha = 0.5f)
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "No transactions found",
+                            color = Color(0xFF424242),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Try adjusting your filters\nor tap + to add a transaction",
+                            color = Color(0xFF9E9E9E),
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
             } else {

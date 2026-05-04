@@ -68,18 +68,40 @@ fun AccountsScreen(
         ) {
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Total Balance", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Net Worth", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                         Text(
-                            formatAmount(state.totalBalance),
+                            formatAmount(state.accounts.sumOf { it.balance }),
                             color = Color.White,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column {
+                                Text("Assets", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                                Text(
+                                    formatAmount(state.accounts.filter { it.balance >= 0 }.sumOf { it.balance }),
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Liabilities", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                                Text(
+                                    formatAmount(state.accounts.filter { it.balance < 0 }.sumOf { it.balance }),
+                                    color = Color(0xFFFFCDD2),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -135,17 +157,25 @@ fun AccountCard(account: Account, onClick: () -> Unit, onDelete: () -> Unit) {
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Colored left border strip
             Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(color.copy(alpha = 0.15f)),
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(color)
+            )
+            Spacer(Modifier.width(12.dp))
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape).background(color),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(categoryIconVector(account.icon), contentDescription = null, tint = color, modifier = Modifier.size(26.dp))
+                Icon(categoryIconVector(account.icon), contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).padding(vertical = 16.dp)) {
                 Text(account.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Text(
                     "${account.type.name} • ${account.currency}",
@@ -156,7 +186,7 @@ fun AccountCard(account: Account, onClick: () -> Unit, onDelete: () -> Unit) {
                     Text("Limit: ${formatAmount(account.creditLimit, account.currency)}", fontSize = 11.sp, color = Color(0xFF9E9E9E))
                 }
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(end = 8.dp)) {
                 Text(
                     formatAmount(account.balance, account.currency),
                     fontWeight = FontWeight.Bold,

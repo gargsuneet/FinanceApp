@@ -142,9 +142,29 @@ fun BudgetScreen(
                 item {
                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFBDBDBD))
-                            Spacer(Modifier.height(8.dp))
-                            Text("No budgets set for this month", color = Color(0xFF9E9E9E))
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00897B).copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.AccountBalanceWallet,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp),
+                                    tint = Color(0xFF00897B).copy(alpha = 0.5f)
+                                )
+                            }
+                            Spacer(Modifier.height(16.dp))
+                            Text("No budgets yet", color = Color(0xFF424242), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Tap + to set a budget\nfor a spending category",
+                                color = Color(0xFF9E9E9E),
+                                fontSize = 13.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
                     }
                 }

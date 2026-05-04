@@ -1,12 +1,6 @@
 package com.financeapp.presentation.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,7 +36,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(FinanceApplication.instance))
 ) {
     val state by viewModel.uiState.collectAsState()
-    var fabExpanded by remember { mutableStateOf(false) }
 
     val monthLabel = remember(state.selectedMonth, state.selectedYear) {
         val cal = Calendar.getInstance()
@@ -158,17 +150,32 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.ReceiptLong,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = Color(0xFFBDBDBD)
-                            )
-                            Spacer(Modifier.height(12.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00897B).copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.ReceiptLong,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp),
+                                    tint = Color(0xFF00897B).copy(alpha = 0.5f)
+                                )
+                            }
+                            Spacer(Modifier.height(16.dp))
                             Text(
-                                "No transactions this month\nTap + to add one!",
+                                "No transactions yet",
+                                color = Color(0xFF424242),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Tap + to record your first transaction",
                                 color = Color(0xFF9E9E9E),
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -232,109 +239,16 @@ fun HomeScreen(
             }
         }
 
-        // FAB overlay: dim background when expanded
-        if (fabExpanded) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable { fabExpanded = false }
-            )
-        }
-
-        // FAB with 3 options
-        Column(
+        FloatingActionButton(
+            onClick = { onAddTransaction(TransactionType.EXPENSE) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            AnimatedVisibility(
-                visible = fabExpanded,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FabOption(
-                        label = "Transfer",
-                        color = Color(0xFF1E88E5),
-                        icon = Icons.Default.SwapHoriz,
-                        onClick = {
-                            fabExpanded = false
-                            onAddTransaction(TransactionType.TRANSFER)
-                        }
-                    )
-                    FabOption(
-                        label = "Income",
-                        color = Color(0xFF43A047),
-                        icon = Icons.Default.ArrowDownward,
-                        onClick = {
-                            fabExpanded = false
-                            onAddTransaction(TransactionType.INCOME)
-                        }
-                    )
-                    FabOption(
-                        label = "Expense",
-                        color = Color(0xFFE53935),
-                        icon = Icons.Default.ArrowUpward,
-                        onClick = {
-                            fabExpanded = false
-                            onAddTransaction(TransactionType.EXPENSE)
-                        }
-                    )
-                }
-            }
-            FloatingActionButton(
-                onClick = { fabExpanded = !fabExpanded },
-                containerColor = Color(0xFFFF6F00),
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(
-                    if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = "Add Transaction"
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FabOption(
-    label: String,
-    color: Color,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            shadowElevation = 2.dp
-        ) {
-            Text(
-                label,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = color
-            )
-        }
-        FloatingActionButton(
-            onClick = onClick,
-            modifier = Modifier.size(44.dp),
-            containerColor = color,
+            containerColor = Color(0xFFFF6F00),
             contentColor = Color.White,
             shape = CircleShape
         ) {
-            Icon(icon, contentDescription = label, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Add, contentDescription = "Add Transaction")
         }
     }
 }

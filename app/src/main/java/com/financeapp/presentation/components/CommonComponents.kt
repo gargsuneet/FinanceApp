@@ -102,6 +102,15 @@ fun TransactionItem(
                 fontSize = 14.sp,
                 color = Color(0xFF212121)
             )
+            if (transaction.subcategoryName.isNotEmpty()) {
+                Text(
+                    transaction.subcategoryName,
+                    fontSize = 11.sp,
+                    color = Color(0xFF757575),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
             Text(
                 buildString {
                     when (transaction.type) {

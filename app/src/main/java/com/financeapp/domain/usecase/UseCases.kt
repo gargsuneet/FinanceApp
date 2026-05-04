@@ -27,12 +27,15 @@ class GetTransactionsUseCase(
             val accountMap = accounts.associateBy { it.id }
             val categoryMap = categories.associateBy { it.id }
             transactions.map { t ->
+                val cat = t.categoryId?.let { categoryMap[it] }
+                val parentCat = cat?.parentId?.let { categoryMap[it] }
                 t.copy(
                     accountName = accountMap[t.accountId]?.name ?: "",
                     toAccountName = t.toAccountId?.let { accountMap[it]?.name } ?: "",
-                    categoryName = t.categoryId?.let { categoryMap[it]?.name } ?: "",
-                    categoryIcon = t.categoryId?.let { categoryMap[it]?.icon } ?: "",
-                    categoryColor = t.categoryId?.let { categoryMap[it]?.color } ?: ""
+                    categoryName = if (parentCat != null) parentCat.name else (cat?.name ?: ""),
+                    categoryIcon = if (parentCat != null) parentCat.icon else (cat?.icon ?: ""),
+                    categoryColor = if (parentCat != null) parentCat.color else (cat?.color ?: ""),
+                    subcategoryName = if (parentCat != null) (cat?.name ?: "") else ""
                 )
             }
         }
@@ -46,12 +49,15 @@ class GetTransactionsUseCase(
             val accountMap = accounts.associateBy { it.id }
             val categoryMap = categories.associateBy { it.id }
             transactions.map { t ->
+                val cat = t.categoryId?.let { categoryMap[it] }
+                val parentCat = cat?.parentId?.let { categoryMap[it] }
                 t.copy(
                     accountName = accountMap[t.accountId]?.name ?: "",
                     toAccountName = t.toAccountId?.let { accountMap[it]?.name } ?: "",
-                    categoryName = t.categoryId?.let { categoryMap[it]?.name } ?: "",
-                    categoryIcon = t.categoryId?.let { categoryMap[it]?.icon } ?: "",
-                    categoryColor = t.categoryId?.let { categoryMap[it]?.color } ?: ""
+                    categoryName = if (parentCat != null) parentCat.name else (cat?.name ?: ""),
+                    categoryIcon = if (parentCat != null) parentCat.icon else (cat?.icon ?: ""),
+                    categoryColor = if (parentCat != null) parentCat.color else (cat?.color ?: ""),
+                    subcategoryName = if (parentCat != null) (cat?.name ?: "") else ""
                 )
             }
         }
@@ -65,12 +71,15 @@ class GetTransactionsUseCase(
             val accountMap = accounts.associateBy { it.id }
             val categoryMap = categories.associateBy { it.id }
             transactions.map { t ->
+                val cat = t.categoryId?.let { categoryMap[it] }
+                val parentCat = cat?.parentId?.let { categoryMap[it] }
                 t.copy(
                     accountName = accountMap[t.accountId]?.name ?: "",
                     toAccountName = t.toAccountId?.let { accountMap[it]?.name } ?: "",
-                    categoryName = t.categoryId?.let { categoryMap[it]?.name } ?: "",
-                    categoryIcon = t.categoryId?.let { categoryMap[it]?.icon } ?: "",
-                    categoryColor = t.categoryId?.let { categoryMap[it]?.color } ?: ""
+                    categoryName = if (parentCat != null) parentCat.name else (cat?.name ?: ""),
+                    categoryIcon = if (parentCat != null) parentCat.icon else (cat?.icon ?: ""),
+                    categoryColor = if (parentCat != null) parentCat.color else (cat?.color ?: ""),
+                    subcategoryName = if (parentCat != null) (cat?.name ?: "") else ""
                 )
             }
         }

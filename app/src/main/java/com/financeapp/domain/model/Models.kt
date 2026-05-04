@@ -28,7 +28,8 @@ data class Transaction(
     val toAccountName: String = "",
     val categoryName: String = "",
     val categoryIcon: String = "",
-    val categoryColor: String = ""
+    val categoryColor: String = "",
+    val subcategoryName: String = ""
 )
 
 data class Account(

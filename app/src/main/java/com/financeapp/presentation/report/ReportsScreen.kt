@@ -1,6 +1,8 @@
 package com.financeapp.presentation.report
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,11 +10,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +30,7 @@ import com.financeapp.presentation.components.parseColor
 import com.financeapp.domain.model.MonthlyTrend
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +40,9 @@ fun ReportsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showCustomRangePicker by remember { mutableStateOf(false) }
+    var customRangeActive by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -57,34 +65,100 @@ fun ReportsScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = {
+                                customRangeActive = false
+                                viewModel.clearCustomRange()
+                                val cal = Calendar.getInstance().also {
+                                    it.set(state.selectedYear, state.selectedMonth - 1, 1)
+                                    it.add(Calendar.MONTH, -1)
+                                }
+                                viewModel.setMonthYear(cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR))
+                            }, enabled = !customRangeActive) { Icon(Icons.Default.ChevronLeft, null) }
+
                             val cal = Calendar.getInstance().also {
                                 it.set(state.selectedYear, state.selectedMonth - 1, 1)
-                                it.add(Calendar.MONTH, -1)
                             }
-                            viewModel.setMonthYear(cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR))
-                        }) { Icon(Icons.Default.ChevronLeft, null) }
+                            if (customRangeActive && state.customRangeStart != null && state.customRangeEnd != null) {
+                                val sdf = SimpleDateFormat("MMM d", Locale.getDefault())
+                                Text(
+                                    "${sdf.format(Date(state.customRangeStart))} – ${sdf.format(Date(state.customRangeEnd))}",
+                                    fontWeight = FontWeight.SemiBold, fontSize = 14.sp
+                                )
+                            } else {
+                                Text(
+                                    SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(cal.time),
+                                    fontWeight = FontWeight.SemiBold, fontSize = 16.sp
+                                )
+                            }
 
-                        val cal = Calendar.getInstance().also {
-                            it.set(state.selectedYear, state.selectedMonth - 1, 1)
+                            IconButton(onClick = {
+                                customRangeActive = false
+                                viewModel.clearCustomRange()
+                                val cal2 = Calendar.getInstance().also {
+                                    it.set(state.selectedYear, state.selectedMonth - 1, 1)
+                                    it.add(Calendar.MONTH, 1)
+                                }
+                                viewModel.setMonthYear(cal2.get(Calendar.MONTH) + 1, cal2.get(Calendar.YEAR))
+                            }, enabled = !customRangeActive) { Icon(Icons.Default.ChevronRight, null) }
                         }
-                        Text(
-                            SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(cal.time),
-                            fontWeight = FontWeight.SemiBold, fontSize = 16.sp
-                        )
-
-                        IconButton(onClick = {
-                            val cal2 = Calendar.getInstance().also {
-                                it.set(state.selectedYear, state.selectedMonth - 1, 1)
-                                it.add(Calendar.MONTH, 1)
-                            }
-                            viewModel.setMonthYear(cal2.get(Calendar.MONTH) + 1, cal2.get(Calendar.YEAR))
-                        }) { Icon(Icons.Default.ChevronRight, null) }
+                        // Custom range chip
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = !customRangeActive,
+                                onClick = {
+                                    customRangeActive = false
+                                    viewModel.clearCustomRange()
+                                },
+                                label = { Text("This Month", fontSize = 12.sp) }
+                            )
+                            FilterChip(
+                                selected = customRangeActive,
+                                onClick = {
+                                    // Show start date picker
+                                    val today = Calendar.getInstance()
+                                    DatePickerDialog(
+                                        context,
+                                        { _, startYear, startMonth, startDay ->
+                                            val startCal = Calendar.getInstance().apply {
+                                                set(startYear, startMonth, startDay, 0, 0, 0)
+                                                set(Calendar.MILLISECOND, 0)
+                                            }
+                                            val startMs = startCal.timeInMillis
+                                            DatePickerDialog(
+                                                context,
+                                                { _, endYear, endMonth, endDay ->
+                                                    val endCal = Calendar.getInstance().apply {
+                                                        set(endYear, endMonth, endDay, 23, 59, 59)
+                                                        set(Calendar.MILLISECOND, 999)
+                                                    }
+                                                    val endMs = endCal.timeInMillis
+                                                    customRangeActive = true
+                                                    viewModel.setCustomRange(startMs, endMs)
+                                                },
+                                                today.get(Calendar.YEAR),
+                                                today.get(Calendar.MONTH),
+                                                today.get(Calendar.DAY_OF_MONTH)
+                                            ).show()
+                                        },
+                                        today.get(Calendar.YEAR),
+                                        today.get(Calendar.MONTH),
+                                        today.get(Calendar.DAY_OF_MONTH)
+                                    ).show()
+                                },
+                                label = { Text("Custom Range", fontSize = 12.sp) },
+                                leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
                     }
                 }
             }
