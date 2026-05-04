@@ -288,10 +288,10 @@ fun SettingsScreen(
                         )
                         Divider(modifier = Modifier.padding(horizontal = 16.dp))
                         SettingsRow(
-                            icon = Icons.Default.People,
-                            iconColor = Color(0xFF2196F3),
-                            title = "Sync Accounts",
-                            subtitle = "Share book with others",
+                            icon = Icons.Default.Sync,
+                            iconColor = Color(0xFF00897B),
+                            title = "Cloud Sync",
+                            subtitle = "Sign in with email to sync across devices",
                             onClick = onSyncAccountsClick
                         )
                     }
