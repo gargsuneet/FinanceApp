@@ -277,18 +277,9 @@ class SettingsViewModel(
     }
 
     private fun refreshGoogleToken(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val token = com.google.android.gms.auth.GoogleAuthUtil.getToken(
-                    app,
-                    account.account!!,
-                    "oauth2:https://www.googleapis.com/auth/drive.file"
-                )
-                _uiState.update { it.copy(driveAccessToken = token) }
-            } catch (e: Exception) {
-                // Token refresh failed; user may need to re-sign in
-            }
-        }
+        // GoogleAuthUtil.getToken is not available in play-services-auth 21+.
+        // Token must be obtained via serverAuthCode exchange on a backend server.
+        // For now, Drive backup via this worker path is not supported without a backend.
     }
 
     fun signOutGoogle(context: android.content.Context) {
