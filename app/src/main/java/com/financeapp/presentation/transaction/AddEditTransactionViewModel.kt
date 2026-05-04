@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.financeapp.FinanceApplication
 import com.financeapp.domain.model.*
+import com.financeapp.domain.model.CategoryType
 import com.financeapp.domain.repository.TransactionRepository
 import com.financeapp.domain.usecase.*
 import kotlinx.coroutines.flow.*
@@ -42,7 +43,13 @@ data class AddEditTransactionUiState(
     val newAccountType: AccountType = AccountType.CASH,
     val newAccountBalance: String = "0",
     val newAccountCurrency: String = "USD",
-    val newAccountColor: String = "#2196F3"
+    val newAccountColor: String = "#2196F3",
+    // Inline category creation
+    val newCategoryName: String = "",
+    val newCategoryColor: String = "#9C27B0",
+    val newCategoryParentId: Long? = null,
+    // Photo attachment
+    val photoUri: String? = null
 )
 
 class AddEditTransactionViewModel(
@@ -114,7 +121,8 @@ class AddEditTransactionViewModel(
                         isRecurring = transaction.isRecurring,
                         recurringPeriod = transaction.recurringPeriod,
                         currency = transaction.currency,
-                        syncAccountId = transaction.syncAccountId
+                        syncAccountId = transaction.syncAccountId,
+                        photoUri = transaction.photoUri
                     )
                 }
             }
@@ -223,7 +231,8 @@ class AddEditTransactionViewModel(
             isRecurring = state.isRecurring,
             recurringPeriod = state.recurringPeriod,
             currency = state.currency,
-            syncAccountId = state.syncAccountId
+            syncAccountId = state.syncAccountId,
+            photoUri = state.photoUri
         )
 
         viewModelScope.launch {
@@ -240,6 +249,46 @@ class AddEditTransactionViewModel(
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
+        }
+    }
+
+    fun setNewCategoryName(name: String) = _uiState.update { it.copy(newCategoryName = name) }
+    fun setNewCategoryColor(color: String) = _uiState.update { it.copy(newCategoryColor = color) }
+    fun setNewCategoryParentId(id: Long?) = _uiState.update { it.copy(newCategoryParentId = id) }
+    fun setPhotoUri(uri: String?) = _uiState.update { it.copy(photoUri = uri) }
+
+    fun saveNewCategory(name: String, type: CategoryType, color: String) {
+        viewModelScope.launch {
+            val app = FinanceApplication.instance
+            val newId = app.categoryRepository.insert(
+                com.financeapp.domain.model.Category(name = name, type = type, color = color, parentId = null)
+            )
+            val updated = app.categoryRepository.getAll().first()
+            _uiState.update { it.copy(categories = updated, selectedCategoryId = newId) }
+        }
+    }
+
+    fun saveNewSubCategory(parentId: Long, name: String, color: String) {
+        viewModelScope.launch {
+            val app = FinanceApplication.instance
+            val parentCat = app.categoryRepository.getAll().first().find { it.id == parentId }
+            val catType = parentCat?.type ?: if (_uiState.value.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+            val newId = app.categoryRepository.insert(
+                com.financeapp.domain.model.Category(name = name, type = catType, color = color, parentId = parentId)
+            )
+            val updated = app.categoryRepository.getAll().first()
+            _uiState.update { it.copy(categories = updated, selectedCategoryId = newId) }
+        }
+    }
+
+    fun saveNewSyncAccount(name: String, email: String, color: String) {
+        viewModelScope.launch {
+            val app = FinanceApplication.instance
+            val newId = app.syncAccountRepository.insert(
+                com.financeapp.domain.model.SyncAccount(name = name, email = email, color = color, isOwner = false)
+            )
+            val updated = app.syncAccountRepository.getAll().first()
+            _uiState.update { it.copy(syncAccounts = updated, syncAccountId = newId) }
         }
     }
 

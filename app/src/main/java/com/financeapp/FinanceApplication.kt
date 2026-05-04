@@ -86,7 +86,7 @@ class FinanceApplication : Application() {
     private fun initDependencies() {
         database = Room.databaseBuilder(this, FinanceDatabase::class.java, FinanceDatabase.DATABASE_NAME)
             .addCallback(FinanceDatabase.seedCallback)
-            .addMigrations(FinanceDatabase.MIGRATION_1_2)
+            .addMigrations(FinanceDatabase.MIGRATION_1_2, FinanceDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
 

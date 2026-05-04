@@ -117,6 +117,12 @@ fun TransactionItem(
                 fontSize = 11.sp,
                 color = Color(0xFFBDBDBD)
             )
+            if (transaction.photoUri != null) {
+                Icon(
+                    Icons.Default.CameraAlt, contentDescription = "Has photo",
+                    tint = Color(0xFFBDBDBD), modifier = Modifier.size(12.dp)
+                )
+            }
         }
     }
 }

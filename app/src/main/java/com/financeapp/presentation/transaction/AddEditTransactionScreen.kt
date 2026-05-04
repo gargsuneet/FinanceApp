@@ -30,6 +30,15 @@ import com.financeapp.domain.model.TransactionType
 import com.financeapp.presentation.components.ACCOUNT_COLORS
 import com.financeapp.presentation.components.CURRENCIES
 import com.financeapp.presentation.components.parseColor
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import com.financeapp.domain.model.CategoryType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +51,10 @@ fun AddEditTransactionScreen(
     val state by viewModel.uiState.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var showAddCategorySheet by remember { mutableStateOf(false) }
+    var showAddSubCategorySheet by remember { mutableStateOf(false) }
+    var showAddSyncSheet by remember { mutableStateOf(false) }
 
     // Calculator state
     var calcLeft by remember { mutableStateOf("") }
@@ -307,7 +320,9 @@ fun AddEditTransactionScreen(
                             },
                             allCategories = state.categories,
                             selectedId = state.selectedCategoryId,
-                            onSelect = viewModel::setCategory
+                            onSelect = viewModel::setCategory,
+                            onAddCategory = { showAddCategorySheet = true },
+                            onAddSubCategory = { showAddSubCategorySheet = true }
                         )
                     }
                 }
@@ -337,6 +352,104 @@ fun AddEditTransactionScreen(
                                     .clickable { noteExpanded = true }
                                     .padding(vertical = 4.dp)
                             )
+                        }
+                    }
+                }
+
+                // Photo attachment row
+                item {
+                    val context = LocalContext.current
+                    var showPhotoOptions by remember { mutableStateOf(false) }
+                    var cameraImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+                    val cameraLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.TakePicture()
+                    ) { success ->
+                        if (success) cameraImageUri?.let { viewModel.setPhotoUri(it.toString()) }
+                    }
+
+                    val galleryLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        uri?.let { viewModel.setPhotoUri(it.toString()) }
+                    }
+
+                    val cameraPermLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { granted ->
+                        if (granted) {
+                            val photoFile = java.io.File(
+                                context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES),
+                                "photo_${System.currentTimeMillis()}.jpg"
+                            )
+                            cameraImageUri = androidx.core.content.FileProvider.getUriForFile(
+                                context, "${context.packageName}.fileprovider", photoFile
+                            )
+                            cameraLauncher.launch(cameraImageUri!!)
+                        }
+                    }
+
+                    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showPhotoOptions = true }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt, contentDescription = "Attach Photo",
+                                tint = Color(0xFF757575), modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Photo", fontSize = 13.sp, color = Color(0xFF757575),
+                                fontWeight = FontWeight.Medium, modifier = Modifier.width(64.dp)
+                            )
+                            if (state.photoUri != null) {
+                                PhotoThumbnail(
+                                    uri = state.photoUri,
+                                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
+                                )
+                                Spacer(Modifier.weight(1f))
+                                IconButton(onClick = { viewModel.setPhotoUri(null) }) {
+                                    Icon(
+                                        Icons.Default.Close, contentDescription = "Remove photo",
+                                        tint = Color(0xFF9E9E9E), modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else {
+                                Text("Tap to attach photo", color = Color(0xFFBDBDBD), fontSize = 14.sp)
+                            }
+                        }
+                        Divider(color = Color(0xFFF5F5F5))
+                    }
+
+                    if (showPhotoOptions) {
+                        ModalBottomSheet(onDismissRequest = { showPhotoOptions = false }) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    "Attach Photo", fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp, modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                                ListItem(
+                                    headlineContent = { Text("Take Photo") },
+                                    leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                                    modifier = Modifier.clickable {
+                                        showPhotoOptions = false
+                                        cameraPermLauncher.launch(android.Manifest.permission.CAMERA)
+                                    }
+                                )
+                                ListItem(
+                                    headlineContent = { Text("Choose from Gallery") },
+                                    leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                                    modifier = Modifier.clickable {
+                                        showPhotoOptions = false
+                                        galleryLauncher.launch("image/*")
+                                    }
+                                )
+                                Spacer(Modifier.height(16.dp))
+                            }
                         }
                     }
                 }
@@ -376,6 +489,17 @@ fun AddEditTransactionScreen(
                                         onClick = { viewModel.setSyncAccountId(sa.id); syncExpanded = false }
                                     )
                                 }
+                                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF757575))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Add Sync Account", fontSize = 13.sp, color = Color(0xFF757575))
+                                        }
+                                    },
+                                    onClick = { syncExpanded = false; showAddSyncSheet = true }
+                                )
                             }
                         }
                     }
@@ -505,6 +629,205 @@ fun AddEditTransactionScreen(
     if (state.showNewAccountSheet) {
         ModalBottomSheet(onDismissRequest = viewModel::hideNewAccountForm) {
             NewAccountContent(state = state, viewModel = viewModel)
+        }
+    }
+
+    // Add New Category sheet
+    if (showAddCategorySheet) {
+        var newCatName by remember { mutableStateOf("") }
+        var newCatType by remember { mutableStateOf(
+            if (state.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
+        ) }
+        var newCatColor by remember { mutableStateOf("#9C27B0") }
+        ModalBottomSheet(onDismissRequest = { showAddCategorySheet = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text("New Category", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                OutlinedTextField(
+                    value = newCatName, onValueChange = { newCatName = it },
+                    label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                Text("Type", fontSize = 12.sp, color = Color(0xFF757575))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = newCatType == CategoryType.EXPENSE,
+                        onClick = { newCatType = CategoryType.EXPENSE },
+                        label = { Text("Expense") }
+                    )
+                    FilterChip(
+                        selected = newCatType == CategoryType.INCOME,
+                        onClick = { newCatType = CategoryType.INCOME },
+                        label = { Text("Income") }
+                    )
+                }
+                Text("Color", fontSize = 12.sp, color = Color(0xFF757575))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    ACCOUNT_COLORS.forEach { colorHex ->
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(parseColor(colorHex))
+                                .clickable { newCatColor = colorHex }
+                                .then(if (newCatColor == colorHex) Modifier.border(2.5.dp, Color.Black, CircleShape) else Modifier)
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(onClick = { showAddCategorySheet = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            if (newCatName.isNotBlank()) {
+                                viewModel.saveNewCategory(newCatName, newCatType, newCatColor)
+                                showAddCategorySheet = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save") }
+                }
+            }
+        }
+    }
+
+    // Add New Sub-category sheet
+    if (showAddSubCategorySheet) {
+        var newSubCatName by remember { mutableStateOf("") }
+        var newSubCatColor by remember { mutableStateOf("#9C27B0") }
+        var selectedParentId by remember { mutableStateOf<Long?>(null) }
+        var parentDropdownExpanded by remember { mutableStateOf(false) }
+        val parentCategories = state.categories.filter {
+            it.parentId == null && (it.type.name == state.type.name || it.type.name == "BOTH")
+        }
+        ModalBottomSheet(onDismissRequest = { showAddSubCategorySheet = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text("New Sub-category", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                ExposedDropdownMenuBox(
+                    expanded = parentDropdownExpanded,
+                    onExpandedChange = { parentDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = parentCategories.find { it.id == selectedParentId }?.name ?: "Select parent category",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Parent Category") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = parentDropdownExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        singleLine = true
+                    )
+                    ExposedDropdownMenu(
+                        expanded = parentDropdownExpanded,
+                        onDismissRequest = { parentDropdownExpanded = false }
+                    ) {
+                        parentCategories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat.name) },
+                                onClick = { selectedParentId = cat.id; parentDropdownExpanded = false }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = newSubCatName, onValueChange = { newSubCatName = it },
+                    label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                Text("Color", fontSize = 12.sp, color = Color(0xFF757575))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    ACCOUNT_COLORS.forEach { colorHex ->
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(parseColor(colorHex))
+                                .clickable { newSubCatColor = colorHex }
+                                .then(if (newSubCatColor == colorHex) Modifier.border(2.5.dp, Color.Black, CircleShape) else Modifier)
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(onClick = { showAddSubCategorySheet = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            val parentId = selectedParentId
+                            if (newSubCatName.isNotBlank() && parentId != null) {
+                                viewModel.saveNewSubCategory(parentId, newSubCatName, newSubCatColor)
+                                showAddSubCategorySheet = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save") }
+                }
+            }
+        }
+    }
+
+    // Add Sync Account sheet
+    if (showAddSyncSheet) {
+        var syncName by remember { mutableStateOf("") }
+        var syncEmail by remember { mutableStateOf("") }
+        var syncColor by remember { mutableStateOf("#2196F3") }
+        ModalBottomSheet(onDismissRequest = { showAddSyncSheet = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text("Add Sync Account", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                OutlinedTextField(
+                    value = syncName, onValueChange = { syncName = it },
+                    label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                OutlinedTextField(
+                    value = syncEmail, onValueChange = { syncEmail = it },
+                    label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                Text("Color", fontSize = 12.sp, color = Color(0xFF757575))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    ACCOUNT_COLORS.forEach { colorHex ->
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(parseColor(colorHex))
+                                .clickable { syncColor = colorHex }
+                                .then(if (syncColor == colorHex) Modifier.border(2.5.dp, Color.Black, CircleShape) else Modifier)
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(onClick = { showAddSyncSheet = false }, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            if (syncName.isNotBlank()) {
+                                viewModel.saveNewSyncAccount(syncName, syncEmail, syncColor)
+                                showAddSyncSheet = false
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save") }
+                }
+            }
         }
     }
 
@@ -671,7 +994,9 @@ private fun CategoryDropdownRow(
     categories: List<Category>,
     allCategories: List<Category>,
     selectedId: Long?,
-    onSelect: (Long?) -> Unit
+    onSelect: (Long?) -> Unit,
+    onAddCategory: () -> Unit = {},
+    onAddSubCategory: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedCategory = categories.find { it.id == selectedId }
@@ -799,6 +1124,27 @@ private fun CategoryDropdownRow(
                             onClick = { onSelect(cat.id); expanded = false }
                         )
                     }
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF757575))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Add New Category", fontSize = 13.sp, color = Color(0xFF757575))
+                            }
+                        },
+                        onClick = { expanded = false; onAddCategory() }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF757575))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Add New Sub-category", fontSize = 13.sp, color = Color(0xFF757575))
+                            }
+                        },
+                        onClick = { expanded = false; onAddSubCategory() }
+                    )
                 }
             }
         }
@@ -926,6 +1272,31 @@ private fun NewAccountContent(
                 onClick = viewModel::saveNewAccount,
                 modifier = Modifier.weight(1f)
             ) { Text("Save") }
+        }
+    }
+}
+
+@Composable
+private fun PhotoThumbnail(uri: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap = remember(uri) {
+        try {
+            val parsedUri = android.net.Uri.parse(uri)
+            val inputStream = context.contentResolver.openInputStream(parsedUri)
+            val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
+            android.graphics.BitmapFactory.decodeStream(inputStream, null, opts)
+        } catch (e: Exception) { null }
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "Attached photo",
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Box(modifier = modifier.background(Color(0xFFEEEEEE)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Image, contentDescription = null, tint = Color(0xFFBDBDBD))
         }
     }
 }

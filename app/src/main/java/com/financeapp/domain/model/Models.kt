@@ -20,6 +20,7 @@ data class Transaction(
     val recurringPeriod: RecurringPeriod? = null,
     val currency: String = "USD",
     val syncAccountId: Long? = null,
+    val photoUri: String? = null,
     val syncAccountName: String = "",
     // Resolved display fields
     val accountName: String = "",
