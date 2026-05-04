@@ -26,6 +26,7 @@ import com.financeapp.FinanceApplication
 @Composable
 fun SettingsScreen(
     onSyncAccountsClick: () -> Unit = {},
+    onDriveBackupClick: () -> Unit = {},
     onNavigateToPinSetup: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(FinanceApplication.instance))
 ) {
@@ -277,13 +278,23 @@ fun SettingsScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    SettingsRow(
-                        icon = Icons.Default.People,
-                        iconColor = Color(0xFF2196F3),
-                        title = "Sync Accounts",
-                        subtitle = "Share book with others",
-                        onClick = onSyncAccountsClick
-                    )
+                    Column {
+                        SettingsRow(
+                            icon = Icons.Default.CloudSync,
+                            iconColor = Color(0xFF4285F4),
+                            title = "Google Drive Backup",
+                            subtitle = if (state.driveSignedIn) "Signed in as ${state.driveAccountEmail}" else "Backup & sync your data",
+                            onClick = onDriveBackupClick
+                        )
+                        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                        SettingsRow(
+                            icon = Icons.Default.People,
+                            iconColor = Color(0xFF2196F3),
+                            title = "Sync Accounts",
+                            subtitle = "Share book with others",
+                            onClick = onSyncAccountsClick
+                        )
+                    }
                 }
             }
 

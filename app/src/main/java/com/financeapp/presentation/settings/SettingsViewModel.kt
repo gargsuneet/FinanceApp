@@ -46,7 +46,18 @@ data class SettingsUiState(
     val notificationsEnabled: Boolean = false,
     val dailyReminderEnabled: Boolean = false,
     val budgetAlertsEnabled: Boolean = false,
-    val exchangeRates: Map<String, Double> = emptyMap()
+    val exchangeRates: Map<String, Double> = emptyMap(),
+    // Google Drive
+    val driveSignedIn: Boolean = false,
+    val driveAccountName: String = "",
+    val driveAccountEmail: String = "",
+    val driveAccessToken: String = "",
+    val driveFolderId: String? = null,
+    val isDriveUploading: Boolean = false,
+    val isDriveDownloading: Boolean = false,
+    val driveAutoBackupEnabled: Boolean = false,
+    val driveMessage: String? = null,
+    val lastDriveBackupTime: String? = null
 )
 
 class SettingsViewModel(
@@ -79,6 +90,8 @@ class SettingsViewModel(
         private val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         private val DAILY_REMINDER_ENABLED = booleanPreferencesKey("daily_reminder_enabled")
         private val BUDGET_ALERTS_ENABLED = booleanPreferencesKey("budget_alerts_enabled")
+        private val DRIVE_AUTO_BACKUP = booleanPreferencesKey("drive_auto_backup")
+        private val DRIVE_LAST_BACKUP = stringPreferencesKey("drive_last_backup")
     }
 
     init {
@@ -88,9 +101,21 @@ class SettingsViewModel(
                     isPinEnabled = prefs[PIN_ENABLED] ?: false,
                     notificationsEnabled = prefs[NOTIFICATIONS_ENABLED] ?: false,
                     dailyReminderEnabled = prefs[DAILY_REMINDER_ENABLED] ?: false,
-                    budgetAlertsEnabled = prefs[BUDGET_ALERTS_ENABLED] ?: false
+                    budgetAlertsEnabled = prefs[BUDGET_ALERTS_ENABLED] ?: false,
+                    driveAutoBackupEnabled = prefs[DRIVE_AUTO_BACKUP] ?: false,
+                    lastDriveBackupTime = prefs[DRIVE_LAST_BACKUP]
                 )}
             }
+        }
+        // Restore Google Sign-In state if already signed in
+        val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(app)
+        if (account != null) {
+            _uiState.update { it.copy(
+                driveSignedIn = true,
+                driveAccountName = account.displayName ?: "",
+                driveAccountEmail = account.email ?: ""
+            )}
+            refreshGoogleToken(account)
         }
     }
 
@@ -239,6 +264,143 @@ class SettingsViewModel(
     }
 
     fun clearMessage() = _uiState.update { it.copy(exportMessage = null, importMessage = null, backupMessage = null) }
+
+    // ── Google Drive ──────────────────────────────────────────────────────────
+
+    fun onGoogleSignInSuccess(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
+        _uiState.update { it.copy(
+            driveSignedIn = true,
+            driveAccountName = account.displayName ?: "",
+            driveAccountEmail = account.email ?: ""
+        )}
+        refreshGoogleToken(account)
+    }
+
+    private fun refreshGoogleToken(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val token = com.google.android.gms.auth.GoogleAuthUtil.getToken(
+                    app,
+                    account.account!!,
+                    "oauth2:https://www.googleapis.com/auth/drive.file"
+                )
+                _uiState.update { it.copy(driveAccessToken = token) }
+            } catch (e: Exception) {
+                // Token refresh failed; user may need to re-sign in
+            }
+        }
+    }
+
+    fun signOutGoogle(context: android.content.Context) {
+        val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+            com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+        ).build()
+        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
+            .signOut()
+            .addOnCompleteListener {
+                _uiState.update { it.copy(
+                    driveSignedIn = false,
+                    driveAccountName = "",
+                    driveAccountEmail = "",
+                    driveAccessToken = "",
+                    driveFolderId = null
+                )}
+            }
+    }
+
+    fun backupToDrive(context: android.content.Context) {
+        val token = _uiState.value.driveAccessToken
+        if (token.isEmpty()) {
+            _uiState.update { it.copy(driveMessage = "Not signed in to Google") }
+            return
+        }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _uiState.update { it.copy(isDriveUploading = true) }
+            try {
+                val dbFile = context.getDatabasePath(com.financeapp.data.local.FinanceDatabase.DATABASE_NAME)
+                val dbBytes = dbFile.readBytes()
+
+                val folderId = com.financeapp.data.remote.GoogleDriveService.getOrCreateFolder(token)
+                if (folderId == null) {
+                    _uiState.update { it.copy(isDriveUploading = false, driveMessage = "Failed to access Google Drive folder") }
+                    return@launch
+                }
+                _uiState.update { it.copy(driveFolderId = folderId) }
+
+                val success = com.financeapp.data.remote.GoogleDriveService.uploadBackup(token, dbBytes, folderId)
+                if (success) {
+                    val timestamp = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
+                        .format(java.util.Date())
+                    app.applicationContext.dataStore.edit { prefs -> prefs[DRIVE_LAST_BACKUP] = timestamp }
+                    _uiState.update { it.copy(isDriveUploading = false, driveMessage = "✓ Backup uploaded to Google Drive", lastDriveBackupTime = timestamp) }
+                } else {
+                    _uiState.update { it.copy(isDriveUploading = false, driveMessage = "Upload failed. Check your internet connection.") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isDriveUploading = false, driveMessage = "Error: ${e.message}") }
+            }
+        }
+    }
+
+    fun restoreFromDrive(context: android.content.Context) {
+        val token = _uiState.value.driveAccessToken
+        if (token.isEmpty()) {
+            _uiState.update { it.copy(driveMessage = "Not signed in to Google") }
+            return
+        }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _uiState.update { it.copy(isDriveDownloading = true) }
+            try {
+                val folderId = _uiState.value.driveFolderId
+                    ?: com.financeapp.data.remote.GoogleDriveService.getOrCreateFolder(token)
+                if (folderId == null) {
+                    _uiState.update { it.copy(isDriveDownloading = false, driveMessage = "Failed to find backup folder in Drive") }
+                    return@launch
+                }
+
+                val bytes = com.financeapp.data.remote.GoogleDriveService.downloadBackup(token, folderId)
+                if (bytes == null) {
+                    _uiState.update { it.copy(isDriveDownloading = false, driveMessage = "No backup found in Google Drive") }
+                    return@launch
+                }
+
+                val dbFile = context.getDatabasePath(com.financeapp.data.local.FinanceDatabase.DATABASE_NAME)
+                FinanceApplication.instance.database.close()
+                dbFile.writeBytes(bytes)
+
+                val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                android.os.Process.killProcess(android.os.Process.myPid())
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isDriveDownloading = false, driveMessage = "Restore failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun toggleDriveAutoBackup(context: android.content.Context) {
+        viewModelScope.launch {
+            val newValue = !_uiState.value.driveAutoBackupEnabled
+            app.applicationContext.dataStore.edit { it[DRIVE_AUTO_BACKUP] = newValue }
+            if (newValue) {
+                val request = androidx.work.PeriodicWorkRequestBuilder<com.financeapp.notification.DriveAutoBackupWorker>(
+                    1, java.util.concurrent.TimeUnit.DAYS
+                ).build()
+                androidx.work.WorkManager.getInstance(app).enqueueUniquePeriodicWork(
+                    "drive_auto_backup",
+                    androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                )
+                _uiState.update { it.copy(driveAutoBackupEnabled = true, driveMessage = "Auto backup enabled (daily)") }
+            } else {
+                androidx.work.WorkManager.getInstance(app).cancelUniqueWork("drive_auto_backup")
+                _uiState.update { it.copy(driveAutoBackupEnabled = false, driveMessage = "Auto backup disabled") }
+            }
+        }
+    }
+
+    fun setDriveMessage(msg: String) = _uiState.update { it.copy(driveMessage = msg) }
+    fun clearDriveMessage() = _uiState.update { it.copy(driveMessage = null) }
 
     fun setCurrency(currency: String) {
         _uiState.update { it.copy(defaultCurrency = currency) }

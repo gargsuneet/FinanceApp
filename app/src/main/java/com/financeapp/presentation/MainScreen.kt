@@ -135,11 +135,17 @@ fun MainScreen(
             composable("settings") {
                 SettingsScreen(
                     onSyncAccountsClick = { navController.navigate("sync_accounts") },
+                    onDriveBackupClick = { navController.navigate("drive_backup") },
                     onNavigateToPinSetup = onNavigateToPinSetup
                 )
             }
             composable("sync_accounts") {
                 com.financeapp.presentation.sync.SyncAccountsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("drive_backup") {
+                com.financeapp.presentation.settings.DriveBackupScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
