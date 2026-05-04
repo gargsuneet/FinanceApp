@@ -113,7 +113,7 @@ fun BudgetScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Total Budget", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)

@@ -67,7 +67,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = viewModel::prevMonth) {
-                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month", tint = Color(0xFF1976D2))
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month", tint = Color(0xFF00897B))
                     }
                     Text(
                         text = monthLabel,
@@ -76,7 +76,7 @@ fun HomeScreen(
                         color = Color(0xFF212121)
                     )
                     IconButton(onClick = viewModel::nextMonth) {
-                        Icon(Icons.Default.ChevronRight, contentDescription = "Next month", tint = Color(0xFF1976D2))
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Next month", tint = Color(0xFF00897B))
                     }
                 }
                 Divider(color = Color(0xFFEEEEEE))
@@ -119,7 +119,7 @@ fun HomeScreen(
                             formatAmount(state.totalBalance),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1976D2)
+                            color = Color(0xFF00897B)
                         )
                     }
                     Box(
@@ -175,23 +175,58 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(state.recentTransactions) { transaction ->
-                    TransactionItem(
-                        transaction = transaction,
-                        onClick = { onTransactionClick(transaction.id) }
-                    )
-                    Divider(
-                        modifier = Modifier.padding(start = 72.dp),
-                        color = Color(0xFFF5F5F5),
-                        thickness = 0.5.dp
-                    )
+                val grouped = state.recentTransactions.groupBy {
+                    java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(java.util.Date(it.date))
+                }
+                grouped.entries.sortedByDescending { it.key }.forEach { (dateKey, txns) ->
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF00897B).copy(alpha = 0.08f))
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val cal = Calendar.getInstance()
+                            cal.time = java.text.SimpleDateFormat("yyyyMMdd", Locale.getDefault()).parse(dateKey)!!
+                            val dayStr = java.text.SimpleDateFormat("EEEE dd", Locale.getDefault()).format(cal.time)
+                            val monthStr = java.text.SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(cal.time)
+                            Text(dayStr, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color(0xFF00897B))
+                            Text(monthStr, fontSize = 12.sp, color = Color(0xFF9E9E9E))
+                            val dayTotal = txns.sumOf {
+                                when (it.type) {
+                                    com.financeapp.domain.model.TransactionType.EXPENSE -> -it.amount
+                                    com.financeapp.domain.model.TransactionType.INCOME -> it.amount
+                                    else -> 0.0
+                                }
+                            }
+                            Text(
+                                String.format("%+.2f", dayTotal),
+                                fontSize = 13.sp,
+                                color = if (dayTotal >= 0) Color(0xFF43A047) else Color(0xFFE53935),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    items(txns) { transaction ->
+                        TransactionItem(
+                            transaction = transaction,
+                            onClick = { onTransactionClick(transaction.id) }
+                        )
+                        Divider(
+                            modifier = Modifier.padding(start = 70.dp),
+                            color = Color(0xFFF5F5F5),
+                            thickness = 0.5.dp
+                        )
+                    }
                 }
                 item {
                     TextButton(
                         onClick = onSeeAllClick,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("See all transactions", color = Color(0xFF1976D2))
+                        Text("See all transactions", color = Color(0xFF00897B))
                     }
                 }
             }
@@ -226,7 +261,7 @@ fun HomeScreen(
                 ) {
                     FabOption(
                         label = "Transfer",
-                        color = Color(0xFF2196F3),
+                        color = Color(0xFF1E88E5),
                         icon = Icons.Default.SwapHoriz,
                         onClick = {
                             fabExpanded = false
@@ -235,7 +270,7 @@ fun HomeScreen(
                     )
                     FabOption(
                         label = "Income",
-                        color = Color(0xFF4CAF50),
+                        color = Color(0xFF43A047),
                         icon = Icons.Default.ArrowDownward,
                         onClick = {
                             fabExpanded = false
@@ -244,7 +279,7 @@ fun HomeScreen(
                     )
                     FabOption(
                         label = "Expense",
-                        color = Color(0xFFF44336),
+                        color = Color(0xFFE53935),
                         icon = Icons.Default.ArrowUpward,
                         onClick = {
                             fabExpanded = false
@@ -255,7 +290,7 @@ fun HomeScreen(
             }
             FloatingActionButton(
                 onClick = { fabExpanded = !fabExpanded },
-                containerColor = Color(0xFF1976D2),
+                containerColor = Color(0xFFFF6F00),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {

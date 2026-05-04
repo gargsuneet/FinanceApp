@@ -62,7 +62,10 @@ fun MainScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White,
+                contentColor = Color(0xFF00897B)
+            ) {
                 bottomNavItems.forEach { item ->
                     val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
                     NavigationBarItem(
@@ -80,7 +83,8 @@ fun MainScreen(
                                 contentDescription = item.label
                             )
                         },
-                        label = { Text(item.label) }
+                        label = { Text(item.label) },
+                        colors = NavigationBarItemDefaults.colors(indicatorColor = Color(0xFF00897B).copy(alpha = 0.12f), selectedIconColor = Color(0xFF00897B), selectedTextColor = Color(0xFF00897B))
                     )
                 }
             }

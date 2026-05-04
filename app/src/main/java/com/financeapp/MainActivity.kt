@@ -97,9 +97,9 @@ fun CrashScreen(crashLog: String, onRetry: () -> Unit) {
 fun FinanceAppTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Color(0xFF1976D2),
+            primary = Color(0xFF00897B),
             onPrimary = Color.White,
-            primaryContainer = Color(0xFFBBDEFB),
+            primaryContainer = Color(0xFFB2DFDB),
             secondary = Color(0xFF03DAC6),
             background = Color(0xFFF5F5F5),
             surface = Color.White,

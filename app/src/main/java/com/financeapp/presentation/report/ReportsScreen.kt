@@ -92,7 +92,7 @@ fun ReportsScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),

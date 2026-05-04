@@ -140,64 +140,105 @@ fun AddEditTransactionScreen(
     }
 
     val typeColor = when (state.type) {
-        TransactionType.EXPENSE -> Color(0xFFF44336)
-        TransactionType.INCOME -> Color(0xFF4CAF50)
-        TransactionType.TRANSFER -> Color(0xFF2196F3)
+        TransactionType.EXPENSE -> Color(0xFFE53935)
+        TransactionType.INCOME -> Color(0xFF43A047)
+        TransactionType.TRANSFER -> Color(0xFF1E88E5)
     }
+
+    var showCurrencyPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    // Type tabs in the top bar
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        TransactionType.values().forEach { type ->
-                            val isSelected = state.type == type
-                            val tColor = when (type) {
-                                TransactionType.EXPENSE -> Color(0xFFF44336)
-                                TransactionType.INCOME -> Color(0xFF4CAF50)
-                                TransactionType.TRANSFER -> Color(0xFF2196F3)
-                            }
-                            Surface(
-                                modifier = Modifier
-                                    .clickable { viewModel.setType(type) }
-                                    .padding(horizontal = 4.dp),
-                                shape = RoundedCornerShape(6.dp),
-                                color = if (isSelected) tColor else Color.Transparent
-                            ) {
-                                Text(
-                                    type.name.lowercase().replaceFirstChar { it.uppercase() },
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    color = if (isSelected) Color.White else Color(0xFF757575),
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 13.sp
-                                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(typeColor)
+                    .statusBarsPadding()
+                    .padding(top = 4.dp, bottom = 12.dp)
+            ) {
+                // Back button
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                }
+
+                // Type tabs centered
+                Row(modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp)) {
+                    TransactionType.values().forEach { type ->
+                        val selected = state.type == type
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable { viewModel.setType(type) }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                type.name,
+                                color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 12.sp
+                            )
+                            if (selected) {
+                                Box(Modifier.width(24.dp).height(2.dp).background(Color.White))
+                            } else {
+                                Spacer(Modifier.height(2.dp))
                             }
                         }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF212121))
-                    }
-                },
-                actions = {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp).padding(end = 8.dp),
-                            color = typeColor
+                }
+
+                // Amount + Currency (bottom of header)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(top = 36.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (calcOp != null) {
+                        Text(
+                            "$calcLeft $calcOp ${calcRight.ifEmpty { "" }}",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 13.sp
                         )
-                    } else {
-                        TextButton(onClick = ::handleSave) {
-                            Text("SAVE", fontWeight = FontWeight.Bold, color = typeColor)
-                        }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White.copy(alpha = 0.25f),
+                            modifier = Modifier.clickable { showCurrencyPicker = true }
+                        ) {
+                            Text(
+                                state.currency,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            String.format("%.2f", evalAmount()),
+                            fontSize = 40.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // Loading indicator
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 16.dp)
+                            .size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFFAFAFA)
@@ -379,32 +420,6 @@ fun AddEditTransactionScreen(
                 }
             }
 
-            // ── Amount display ─────────────────────────────────────────────
-            Divider(color = Color(0xFFEEEEEE))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Column(horizontalAlignment = Alignment.End) {
-                    if (calcOp != null) {
-                        Text(
-                            "${calcLeft} ${calcOp} ${calcRight.ifEmpty { "" }}",
-                            fontSize = 12.sp,
-                            color = Color(0xFF9E9E9E)
-                        )
-                    }
-                    Text(
-                        String.format("%.2f", evalAmount()),
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = typeColor
-                    )
-                }
-            }
-
             // ── Calculator keypad ──────────────────────────────────────────
             Divider(color = Color(0xFFEEEEEE))
             Column(
@@ -490,6 +505,33 @@ fun AddEditTransactionScreen(
     if (state.showNewAccountSheet) {
         ModalBottomSheet(onDismissRequest = viewModel::hideNewAccountForm) {
             NewAccountContent(state = state, viewModel = viewModel)
+        }
+    }
+
+    // Currency picker bottom sheet
+    if (showCurrencyPicker) {
+        ModalBottomSheet(onDismissRequest = { showCurrencyPicker = false }) {
+            Column(modifier = Modifier.padding(bottom = 32.dp)) {
+                Text(
+                    "Select Currency",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(16.dp)
+                )
+                Divider()
+                androidx.compose.foundation.lazy.LazyColumn {
+                    items(CURRENCIES) { currency ->
+                        ListItem(
+                            headlineContent = { Text(currency) },
+                            modifier = Modifier.clickable {
+                                viewModel.setCurrency(currency)
+                                showCurrencyPicker = false
+                            }
+                        )
+                        Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF5F5F5))
+                    }
+                }
+            }
         }
     }
 }

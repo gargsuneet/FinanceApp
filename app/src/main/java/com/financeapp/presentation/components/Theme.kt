@@ -3,20 +3,22 @@ package com.financeapp.presentation.components
 import androidx.compose.ui.graphics.Color
 
 object FinanceTheme {
-    val Income = Color(0xFF4CAF50)
-    val Expense = Color(0xFFF44336)
-    val Transfer = Color(0xFF2196F3)
+    val Income     = Color(0xFF43A047)   // AndroMoney green
+    val Expense    = Color(0xFFE53935)   // AndroMoney red
+    val Transfer   = Color(0xFF1E88E5)   // AndroMoney blue
     val Background = Color(0xFFF5F5F5)
     val CardBackground = Color(0xFFFFFFFF)
-    val Primary = Color(0xFF1976D2)
-    val PrimaryVariant = Color(0xFF1565C0)
-    val Secondary = Color(0xFF03DAC6)
-    val Surface = Color(0xFFFFFFFF)
-    val OnPrimary = Color(0xFFFFFFFF)
+    val Primary    = Color(0xFF00897B)   // AndroMoney teal
+    val PrimaryDark= Color(0xFF00695C)
+    val PrimaryVariant = Color(0xFF00695C)
+    val Secondary  = Color(0xFF00897B)
+    val Surface    = Color(0xFFFFFFFF)
+    val OnPrimary  = Color(0xFFFFFFFF)
     val OnBackground = Color(0xFF212121)
-    val OnSurface = Color(0xFF212121)
-    val Divider = Color(0xFFE0E0E0)
+    val OnSurface  = Color(0xFF212121)
+    val Divider    = Color(0xFFE0E0E0)
     val TextSecondary = Color(0xFF757575)
+    val AmOrange   = Color(0xFFFF6F00)
 }
 
 val CURRENCIES = listOf("USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "BRL", "MXN", "KRW", "SGD", "HKD", "NOK", "SEK", "DKK", "NZD", "ZAR", "RUB")

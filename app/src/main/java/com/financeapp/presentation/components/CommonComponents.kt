@@ -31,100 +31,92 @@ fun TransactionItem(
     onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .clickable(onClick = onClick)
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Category icon circle
+        val iconColor = parseColor(
+            if (transaction.categoryColor.isNotBlank()) transaction.categoryColor
+            else when (transaction.type) {
+                TransactionType.INCOME -> "#43A047"
+                TransactionType.EXPENSE -> "#E53935"
+                TransactionType.TRANSFER -> "#1E88E5"
+            }
+        )
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(iconColor),
+            contentAlignment = Alignment.Center
         ) {
-            // Category icon circle
-            val iconColor = parseColor(transaction.categoryColor.ifBlank {
+            Icon(
+                imageVector = categoryIconVector(transaction.categoryIcon),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        // Center info
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
                 when (transaction.type) {
-                    TransactionType.INCOME -> "#4CAF50"
-                    TransactionType.EXPENSE -> "#F44336"
-                    TransactionType.TRANSFER -> "#2196F3"
-                }
-            })
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = categoryIconVector(transaction.categoryIcon),
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
+                    TransactionType.TRANSFER -> "Transfer"
+                    else -> transaction.categoryName.ifBlank { transaction.note.ifBlank { transaction.type.name } }
+                },
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = Color(0xFF212121)
+            )
+            Text(
+                buildString {
+                    when (transaction.type) {
+                        TransactionType.TRANSFER -> {
+                            append(transaction.accountName)
+                            if (transaction.toAccountName.isNotBlank()) append(" → ${transaction.toAccountName}")
+                        }
+                        else -> {
+                            append(transaction.accountName)
+                            if (transaction.note.isNotEmpty()) append(" · ${transaction.note}")
+                        }
+                    }
+                },
+                fontSize = 12.sp,
+                color = Color(0xFF9E9E9E),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        // Right amount + time
+        Column(horizontalAlignment = Alignment.End) {
+            val amtColor = when (transaction.type) {
+                TransactionType.EXPENSE -> Color(0xFFE53935)
+                TransactionType.INCOME -> Color(0xFF43A047)
+                TransactionType.TRANSFER -> Color(0xFF1E88E5)
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = when (transaction.type) {
-                        TransactionType.TRANSFER -> "Transfer: ${transaction.accountName} → ${transaction.toAccountName}"
-                        else -> transaction.categoryName.ifBlank { transaction.note.ifBlank { transaction.type.name } }
-                    },
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp,
-                    color = Color(0xFF212121)
-                )
-                if (transaction.note.isNotBlank()) {
-                    Text(
-                        text = transaction.note,
-                        fontSize = 12.sp,
-                        color = Color(0xFF757575),
-                        maxLines = 1
-                    )
-                }
-                Text(
-                    text = "${transaction.accountName} • ${formatDate(transaction.date)}",
-                    fontSize = 11.sp,
-                    color = Color(0xFF9E9E9E)
-                )
+            val amtText = when (transaction.type) {
+                TransactionType.EXPENSE -> "-${transaction.currency} ${String.format("%.2f", transaction.amount)}"
+                TransactionType.INCOME -> "+${transaction.currency} ${String.format("%.2f", transaction.amount)}"
+                TransactionType.TRANSFER -> "${transaction.currency} ${String.format("%.2f", transaction.amount)}"
             }
-
-            Column(horizontalAlignment = Alignment.End) {
-                val amountColor = when (transaction.type) {
-                    TransactionType.INCOME -> Color(0xFF4CAF50)
-                    TransactionType.EXPENSE -> Color(0xFFF44336)
-                    TransactionType.TRANSFER -> Color(0xFF2196F3)
-                }
-                val prefix = when (transaction.type) {
-                    TransactionType.INCOME -> "+"
-                    TransactionType.EXPENSE -> "-"
-                    TransactionType.TRANSFER -> "→"
-                }
-                Text(
-                    text = "$prefix${formatAmount(transaction.amount, transaction.currency)}",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    color = amountColor
-                )
-                if (transaction.fee > 0) {
-                    Text(
-                        text = "Fee: ${formatAmount(transaction.fee, transaction.currency)}",
-                        fontSize = 10.sp,
-                        color = Color(0xFF9E9E9E)
-                    )
-                }
-                if (transaction.points > 0) {
-                    Text(
-                        text = "Pts: ${transaction.points.toInt()}",
-                        fontSize = 10.sp,
-                        color = Color(0xFFFF9800)
-                    )
-                }
-            }
+            Text(
+                amtText,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = amtColor
+            )
+            Text(
+                SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(transaction.date)),
+                fontSize = 11.sp,
+                color = Color(0xFFBDBDBD)
+            )
         }
     }
 }
@@ -140,7 +132,7 @@ fun SummaryCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF00897B))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text("Monthly Overview", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
