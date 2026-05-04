@@ -1392,6 +1392,7 @@ private fun NewAccountContent(
 }
 
 @Composable
+@Composable
 private fun PhotoThumbnail(uri: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val bitmap = remember(uri) {
