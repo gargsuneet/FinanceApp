@@ -26,6 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.financeapp.FinanceApplication
+import com.financeapp.data.remote.FirebaseSyncService
+
+// Detect if Firebase has been configured by the developer
+private fun isFirebaseConfigured() =
+    !FirebaseSyncService.FIREBASE_API_KEY.startsWith("YOUR_") &&
+    !FirebaseSyncService.FIREBASE_STORAGE_BUCKET.startsWith("YOUR_")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +41,7 @@ fun SyncAccountsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val configured = remember { isFirebaseConfigured() }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearError() }
@@ -46,7 +53,7 @@ fun SyncAccountsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isSignedIn) "Cloud Sync" else "Sign In to Sync") },
+                title = { Text("Cloud Sync") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -58,10 +65,19 @@ fun SyncAccountsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF5F5F5)
     ) { padding ->
-        when {
-            state.isSignedIn -> SyncedContent(state, viewModel, Modifier.padding(padding))
-            state.mode == SyncScreenMode.CREATE_ACCOUNT -> CreateAccountContent(state, viewModel, Modifier.padding(padding))
-            else -> SignInContent(state, viewModel, Modifier.padding(padding))
+        if (!configured) {
+            ComingSoonContent(
+                title = "Cloud Sync",
+                icon = Icons.Default.CloudSync,
+                description = "Sign in with your email on any device to keep your data in sync — just like AndroMoney.",
+                modifier = Modifier.padding(padding)
+            )
+        } else {
+            when {
+                state.isSignedIn -> SyncedContent(state, viewModel, Modifier.padding(padding))
+                state.mode == SyncScreenMode.CREATE_ACCOUNT -> CreateAccountContent(state, viewModel, Modifier.padding(padding))
+                else -> SignInContent(state, viewModel, Modifier.padding(padding))
+            }
         }
     }
 
@@ -427,6 +443,55 @@ private fun SyncedContent(state: SyncUiState, vm: SyncAccountViewModel, modifier
                     "Push uploads your current data. Pull replaces local data with cloud data.",
                     fontSize = 12.sp, color = Color(0xFF795548)
                 )
+            }
+        }
+    }
+}
+
+// Shared "coming soon" composable used when a cloud feature isn't configured yet
+@Composable
+fun ComingSoonContent(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = Color(0xFF00897B).copy(alpha = 0.10f),
+            modifier = Modifier.size(100.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = Color(0xFF00897B), modifier = Modifier.size(52.dp))
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(description, fontSize = 14.sp, color = Color(0xFF757575), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Default.Info, null, tint = Color(0xFFF9A825), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text("Coming Soon", fontWeight = FontWeight.SemiBold, color = Color(0xFF795548), fontSize = 14.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "This feature requires a backend server to be configured by the app developer. " +
+                        "All other features work fully offline on this device.",
+                        fontSize = 12.sp, color = Color(0xFF795548)
+                    )
+                }
             }
         }
     }

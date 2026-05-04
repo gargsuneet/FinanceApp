@@ -28,6 +28,9 @@ import com.google.android.gms.common.api.Scope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun isDriveConfigured() =
+    !GoogleDriveService.GOOGLE_WEB_CLIENT_ID.startsWith("YOUR_")
+
 fun DriveBackupScreen(
     onNavigateBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(FinanceApplication.instance))
@@ -35,6 +38,7 @@ fun DriveBackupScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val configured = remember { isDriveConfigured() }
 
     val signInLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -72,6 +76,15 @@ fun DriveBackupScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF5F5F5)
     ) { padding ->
+        if (!configured) {
+            com.financeapp.presentation.sync.ComingSoonContent(
+                title = "Google Drive Backup",
+                icon = Icons.Default.CloudQueue,
+                description = "Back up and restore your data using your Google Drive account.",
+                modifier = Modifier.padding(padding)
+            )
+            return@Scaffold
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

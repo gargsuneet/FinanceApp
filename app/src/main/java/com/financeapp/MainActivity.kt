@@ -1,10 +1,14 @@
 package com.financeapp
 
+import android.Manifest
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,6 +27,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.financeapp.data.local.dataStore
 import com.financeapp.presentation.pin.PinScreen
 import com.financeapp.presentation.pin.PinSetupScreen
@@ -115,12 +122,30 @@ fun FinanceAppTheme(content: @Composable () -> Unit) {
     )
 }
 
+private val NOTIFICATION_ASKED = booleanPreferencesKey("notification_permission_asked")
+
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     var pinChecked by remember { mutableStateOf(false) }
     var startDestination by remember { mutableStateOf("main") }
+
+    // Request POST_NOTIFICATIONS permission once on Android 13+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val notifPermLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { _ -> /* user chose allow or deny — either is fine, app continues */ }
+
+        LaunchedEffect(Unit) {
+            val prefs = context.dataStore.data.first()
+            val alreadyAsked = prefs[NOTIFICATION_ASKED] ?: false
+            if (!alreadyAsked) {
+                context.dataStore.edit { it[NOTIFICATION_ASKED] = true }
+                notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         val prefs = context.dataStore.data.first()
